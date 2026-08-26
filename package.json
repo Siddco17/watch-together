@@ -1,0 +1,17 @@
+{
+  "name": "watch-together",
+  "version": "1.0.0",
+  "description": "Netflix Watch Together hackathon demo — Title Match + synced party playback",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}

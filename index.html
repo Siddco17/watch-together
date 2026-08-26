@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Watch Together — Netflix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <!-- 01 Who's Watching -->
+  <section class="screen is-on" id="profiles" aria-label="Who's Watching">
+    <div class="nf-logo profiles-logo">NETFLIX</div>
+    <div class="profiles-center">
+      <h1 class="profiles-title">Who's Watching?</h1>
+      <div class="profile-row" data-profiles>
+        <button type="button" class="profile-card" data-profile="sarah">
+          <div class="profile-art profile-sarah" aria-hidden="true"></div>
+          <span>Sarah</span>
+        </button>
+        <button type="button" class="profile-card" data-profile="caleb">
+          <div class="profile-art profile-caleb" aria-hidden="true"></div>
+          <span>Caleb</span>
+        </button>
+        <button type="button" class="profile-card" data-profile="children">
+          <div class="profile-art profile-kids" aria-hidden="true"><em>kids</em></div>
+          <span>Children</span>
+        </button>
+        <button type="button" class="profile-card" data-profile="watchparty">
+          <div class="profile-art profile-party" aria-hidden="true"></div>
+          <span>Watch Party</span>
+        </button>
+      </div>
+      <p class="profile-tip" data-profile-tip hidden></p>
+      <button type="button" class="btn btn-manage">Manage Profiles</button>
+    </div>
+  </section>
+
+  <!-- 02 Invite / Start Party -->
+  <section class="screen" id="invite" aria-label="Watch Together">
+    <nav class="nav">
+      <div class="nf-logo">NETFLIX</div>
+      <div class="nav-links">
+        <span>Home</span><span>Shows</span><span>Movies</span>
+        <span>Games</span><span>New &amp; Popular</span><span>My List</span>
+      </div>
+      <div class="nav-spacer"></div>
+      <div class="nav-right">
+        <span class="icon-btn material-symbols-outlined" aria-hidden="true">search</span>
+        <span class="icon-btn material-symbols-outlined" aria-hidden="true">notifications</span>
+        <span class="avatar kids-avatar">kids</span>
+        <span>Children</span>
+        <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
+      </div>
+    </nav>
+    <div class="hero">
+      <div class="copy">
+        <div class="kicker">WATCH TOGETHER</div>
+        <h2>Tonight is a match,<br />not a debate.</h2>
+        <p>Invite friends. Swipe titles like a playlist. Two matches and you're watching — no 40 minute group chat.</p>
+        <div class="mood-label">Party mood</div>
+        <div class="chips" data-chips role="group" aria-label="Party mood"></div>
+        <div class="join-inline">
+          <input class="join-input-field" data-join-code placeholder="Have a code? e.g. N-7K2Q" maxlength="8" />
+          <button type="button" class="btn btn-ghost" data-join>Join</button>
+        </div>
+      </div>
+      <aside class="invite-panel">
+        <h3>Invite Friends</h3>
+        <div class="friend-list" data-friends></div>
+        <button type="button" class="btn btn-red btn-block" data-start-party>Start Party</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 03 Title Match -->
+  <section class="screen" id="match" aria-label="Title Match">
+    <div class="match-layout">
+      <nav class="nav">
+        <div class="nf-logo">NETFLIX</div>
+        <div class="nav-links">
+          <span>Home</span><span>Shows</span><span>Movies</span>
+          <span>Games</span><span>New &amp; Popular</span><span>My List</span>
+        </div>
+        <div class="nav-spacer"></div>
+        <div class="nav-right">
+          <span class="avatar kids-avatar">kids</span>
+          <span>Children</span>
+          <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
+        </div>
+      </nav>
+      <div class="match-head">
+        <h2 data-night>Friday Spy Night</h2>
+        <span class="left-count" data-left>0 left</span>
+        <button type="button" class="btn btn-quiet" data-undo>Undo</button>
+        <span class="code-chip">Code <strong data-party-code>—</strong>
+          <button type="button" class="linkish" data-copy-code>Copy</button>
+        </span>
+        <div class="status-pills" data-status></div>
+      </div>
+      <div class="party-friends" data-party-friends></div>
+      <div class="match-body">
+        <div class="deck-col">
+          <div class="deck" data-deck></div>
+          <div class="actions" data-actions>
+            <button type="button" class="round pass" data-action="pass" title="Pass"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="round later" data-action="later" title="Later"><span class="material-symbols-outlined">keyboard_arrow_up</span></button>
+            <button type="button" class="round heart" data-action="match" title="Match"><span class="material-symbols-outlined filled">favorite</span></button>
+          </div>
+          <p class="hint">Everyone swipes at once — agree in under a minute. Two matches = it’s on the night. Left pass · Right match · Up later.</p>
+        </div>
+        <aside class="rail" data-rail></aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 In-session -->
+  <section class="screen" id="watch" aria-label="Watch session">
+    <div class="player">
+      <video playsinline></video>
+      <div class="subtitle-overlay" data-subs aria-live="polite"></div>
+      <div class="presence">
+        <button type="button" class="player-back" data-back title="Back to matching">
+          <span class="material-symbols-outlined">arrow_back</span>
+          <span>Back</span>
+        </button>
+        <div class="presence-right">
+          <span class="sync" data-sync>You're all at 0:00:00</span>
+          <button type="button" class="quiet on" data-quiet title="Spoiler-safe presence — keep reactions subtle">Quiet · spoiler-safe</button>
+          <div class="react-bar" data-react-bar>
+            <button type="button" data-react="😭" title="Sad">😭</button>
+            <button type="button" data-react="😂" title="Laugh">😂</button>
+            <button type="button" data-react="❤️" title="Love">❤️</button>
+            <button type="button" data-react="🔥" title="Fire">🔥</button>
+            <button type="button" data-react="😨" title="Shock">😨</button>
+          </div>
+        </div>
+      </div>
+      <div class="couch" data-couch>
+        <div class="avatar-row" data-avatars></div>
+        <span class="couch-label" data-couch-label>The couch • All here</span>
+      </div>
+      <div class="react-layer" data-react-layer></div>
+      <div class="chat-panel" data-chat-panel hidden>
+        <div class="chat-panel-head">
+          <h3>Party chat</h3>
+          <button type="button" class="chat-close" data-chat-close aria-label="Close chat">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="chat-messages" data-chat-messages></div>
+        <form class="chat-compose" data-chat-form>
+          <input type="text" data-chat-input placeholder="Say something…" maxlength="280" autocomplete="off" />
+          <button type="submit" class="btn btn-red btn-sm" aria-label="Send">
+            <span class="material-symbols-outlined">send</span>
+          </button>
+        </form>
+      </div>
+      <div class="chrome" data-chrome>
+        <div class="progress" data-progress>
+          <i data-fill></i>
+          <b data-scrub></b>
+          <span class="progress-time" data-time>0:00</span>
+        </div>
+        <div class="controls">
+          <button type="button" class="ctrl" data-play title="Play"><span class="material-symbols-outlined" data-play-icon>play_arrow</span></button>
+          <button type="button" class="ctrl" data-back10 title="Back 10s"><span class="material-symbols-outlined">replay_10</span></button>
+          <button type="button" class="ctrl" data-fwd10 title="Forward 10s"><span class="material-symbols-outlined">forward_10</span></button>
+          <div class="volume-wrap" data-volume-wrap>
+            <button type="button" class="ctrl" data-volume title="Volume">
+              <span class="material-symbols-outlined" data-volume-icon>volume_up</span>
+            </button>
+            <div class="volume-popover" data-volume-popover>
+              <input type="range" class="volume-range" data-volume-range min="0" max="100" value="100" step="1" aria-label="Volume" />
+            </div>
+          </div>
+          <div class="player-center">
+            <span class="title" data-title>Title</span>
+          </div>
+          <button type="button" class="ctrl" data-mic title="Microphone" aria-pressed="false">
+            <span class="material-symbols-outlined" data-mic-icon>mic_off</span>
+          </button>
+          <button type="button" class="ctrl" data-chat-toggle title="Chat" aria-pressed="false">
+            <span class="material-symbols-outlined">chat_bubble</span>
+          </button>
+          <button type="button" class="ctrl" data-cc title="Subtitles" aria-pressed="false">
+            <span class="material-symbols-outlined" data-cc-icon>closed_caption_off</span>
+          </button>
+          <button type="button" class="ctrl" data-speed title="Speed"><span class="material-symbols-outlined">speed</span></button>
+          <button type="button" class="ctrl" data-fullscreen title="Fullscreen"><span class="material-symbols-outlined">fullscreen</span></button>
+          <button type="button" class="btn btn-red btn-sm" data-end>End night</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 Wrap-up -->
+  <section class="screen" id="wrap" aria-label="Session wrap-up">
+    <div class="wrap-layout">
+      <nav class="nav">
+        <div class="nf-logo">NETFLIX</div>
+        <div class="nav-links">
+          <span>Home</span><span>Shows</span><span>Movies</span>
+          <span>Games</span><span>New &amp; Popular</span><span>My List</span>
+        </div>
+        <div class="nav-spacer"></div>
+        <div class="nav-right">
+          <span class="avatar kids-avatar">kids</span>
+          <span>Children</span>
+          <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
+        </div>
+      </nav>
+      <div class="wrap-body">
+        <div class="wrap-main">
+          <p class="wrap-kicker">Night wrap-up</p>
+          <div class="recap-still art-emily" data-wrap-still>
+            <div class="cap">
+              <h3 data-wrap-title>EMILY IN PARIS</h3>
+              <span data-wrap-meta>Clip · Comedy</span>
+            </div>
+          </div>
+          <div class="highlights">
+            <div class="tag"><strong>Loudest reaction</strong><span>3:26:30</span></div>
+            <div class="tag"><strong>Re-watched scenes</strong><span>Shared moments</span></div>
+          </div>
+          <div class="cta-wrap">
+            <button type="button" class="btn btn-red" data-watch-matched>Watch something matched</button>
+            <button type="button" class="btn btn-ghost" data-save-night>Save this night</button>
+          </div>
+        </div>
+        <aside class="rate">
+          <h3>Rating together</h3>
+          <p class="rate-sub">One score for the party — no arguments.</p>
+          <div class="stars" data-stars></div>
+          <div class="votes" data-wrap-votes></div>
+          <p class="party-score" data-party-score></p>
+          <div class="leftover">
+            <h4>For your next watch</h4>
+            <div class="poster-row" data-next-watch></div>
+          </div>
+          <p class="code-hint">Party code <strong data-party-code>—</strong>
+            <button type="button" class="linkish" data-copy-code>Copy</button>
+          </p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
