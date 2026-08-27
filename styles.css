@@ -435,26 +435,43 @@ input:focus-visible {
 }
 .match-head {
   display: flex;
-  align-items: center;
-  gap: 12px 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
   padding: 8px clamp(16px, 4vw, 48px) 8px;
   flex-wrap: wrap;
+}
+.match-head-main {
+  display: flex;
+  align-items: center;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.match-live {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+  max-width: min(100%, 460px);
+  position: relative;
+  z-index: 8;
 }
 .status-pills {
   display: flex;
   gap: 10px;
-  margin-left: auto;
+  margin-left: 0;
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
-  max-width: min(100%, 620px);
+  max-width: 100%;
 }
 @media (max-width: 1100px) {
-  .status-pills {
+  .match-live {
     flex-basis: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
-    max-width: none;
+    align-items: flex-end;
   }
 }
 .match-head h2 { font-size: 20px; font-weight: 600; }
@@ -586,16 +603,34 @@ input:focus-visible {
     linear-gradient(180deg, rgba(0,0,0,.1) 40%, #000 100%),
     url('/media/posters/raazi.jpg') center/cover no-repeat;
 }
-.art-bridgerton,
+.art-enola {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.05) 35%, #000 100%),
+    radial-gradient(circle at 28% 18%, #3d6b4f 0%, transparent 42%),
+    linear-gradient(165deg, #1b3a2c 0%, #0c1612 55%, #c9a227 160%);
+}
+.art-adam {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.08) 35%, #000 100%),
+    radial-gradient(circle at 78% 22%, #e07a3d 0%, transparent 36%),
+    linear-gradient(160deg, #1a4a6e 0%, #0b1c2e 58%, #071018 100%);
+}
+.art-rednotice {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.12) 35%, #000 100%),
+    radial-gradient(circle at 50% 0%, #e50914 0%, transparent 46%),
+    linear-gradient(180deg, #4a0c0c 0%, #140404 100%);
+}
+.art-maybe {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.1) 40%, #000 100%),
+    radial-gradient(circle at 20% 80%, #f0b7a0 0%, transparent 42%),
+    linear-gradient(140deg, #5a3a38 0%, #1c1218 62%, #0a0809 100%);
+}
 .art-comfort {
   background:
-    linear-gradient(180deg, rgba(0,0,0,.12) 40%, #000 100%),
-    url('/media/posters/bridgerton.jpg') center/cover no-repeat;
-}
-.art-emily {
-  background:
-    linear-gradient(180deg, rgba(0,0,0,.12) 40%, #000 100%),
-    url('/media/posters/emily.webp') center/cover no-repeat;
+    linear-gradient(180deg, rgba(0,0,0,.1) 40%, #000 100%),
+    url('/media/posters/raazi.jpg') center/cover no-repeat;
 }
 
 .stamp {
@@ -618,18 +653,16 @@ input:focus-visible {
 
 .swipe-feed {
   position: absolute;
-  left: 50%;
-  bottom: 8px;
-  transform: translateX(-50%);
+  top: calc(100% + 8px);
+  right: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 6px;
-  z-index: 6;
+  z-index: 8;
   pointer-events: none;
   width: min(100%, 360px);
 }
-.deck-col { position: relative; }
 .friend-swipe-chip {
   background: rgba(20, 20, 20, .92);
   border: 1px solid rgba(255,255,255,.12);

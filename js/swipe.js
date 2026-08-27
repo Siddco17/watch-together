@@ -35,7 +35,22 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     feedEl = document.createElement('div');
     feedEl.className = 'swipe-feed';
     feedEl.setAttribute('data-swipe-feed', '');
-    root.querySelector('.deck-col')?.appendChild(feedEl);
+    root.querySelector('.match-live')?.appendChild(feedEl) ||
+      root.querySelector('.match-head')?.appendChild(feedEl);
+  }
+
+  function pushFeedChip(html, extraClass = '') {
+    if (!feedEl) return;
+    while (feedEl.children.length >= 4) feedEl.firstElementChild.remove();
+    const chip = document.createElement('div');
+    chip.className = `friend-swipe-chip ${extraClass}`.trim();
+    chip.innerHTML = html;
+    feedEl.appendChild(chip);
+    requestAnimationFrame(() => chip.classList.add('in'));
+    setTimeout(() => {
+      chip.classList.add('out');
+      setTimeout(() => chip.remove(), 320);
+    }, 2200);
   }
 
   function remainingDeck(party) {
@@ -265,15 +280,10 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     const name = payload.memberName || 'Friend';
     const title = titlesById.get(payload.titleId);
     const verb = ACTION_LABEL[payload.action] || payload.action;
-    const chip = document.createElement('div');
-    chip.className = `friend-swipe-chip ${payload.action || ''}`;
-    chip.innerHTML = `<strong>${esc(name)}</strong> ${esc(verb)}${title ? ` · ${esc(title.title)}` : ''}`;
-    feedEl.appendChild(chip);
-    requestAnimationFrame(() => chip.classList.add('in'));
-    setTimeout(() => {
-      chip.classList.add('out');
-      setTimeout(() => chip.remove(), 320);
-    }, 2200);
+    pushFeedChip(
+      `<strong>${esc(name)}</strong> ${esc(verb)}${title ? ` · ${esc(title.title)}` : ''}`,
+      payload.action || ''
+    );
 
     const ghost = document.createElement('div');
     ghost.className = `ghost-stamp ${payload.action || 'match'}`;
@@ -358,16 +368,8 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     celebrate(titleId) {
       lastMatchId = titleId;
       const title = titlesById.get(titleId);
-      if (title && feedEl) {
-        const chip = document.createElement('div');
-        chip.className = 'friend-swipe-chip match';
-        chip.innerHTML = `<strong>It's a match</strong> · ${esc(title.title)}`;
-        feedEl.appendChild(chip);
-        requestAnimationFrame(() => chip.classList.add('in'));
-        setTimeout(() => {
-          chip.classList.add('out');
-          setTimeout(() => chip.remove(), 320);
-        }, 2400);
+      if (title) {
+        pushFeedChip(`<strong>It's a match</strong> · ${esc(title.title)}`, 'match');
       }
     },
   };
