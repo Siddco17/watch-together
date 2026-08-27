@@ -8,7 +8,7 @@ module.exports = [
     year: 2020,
     vibes: ['Comfort', 'Thrills', 'Drama', 'Feel-good'],
     art: 'art-enola',
-    poster: '',
+    poster: '/media/posters/enola.jpg',
     video: '/media/previews/enola.mp4',
   },
   {
@@ -20,7 +20,7 @@ module.exports = [
     year: 2019,
     vibes: ['Comfort', 'Romance', 'Comedy', 'Feel-good'],
     art: 'art-maybe',
-    poster: '',
+    poster: '/media/posters/maybe.jpg',
     video: '/media/previews/maybe.mp4',
   },
   {
@@ -44,7 +44,7 @@ module.exports = [
     year: 2022,
     vibes: ['Comedy', 'Action', 'Feel-good', 'New this week'],
     art: 'art-adam',
-    poster: '',
+    poster: '/media/posters/adam.jpg',
     video: '/media/previews/adam.mp4',
   },
   {
@@ -56,7 +56,7 @@ module.exports = [
     year: 2021,
     vibes: ['Thrills', 'Action', 'Comedy'],
     art: 'art-rednotice',
-    poster: '',
+    poster: '/media/posters/rednotice.jpg',
     video: '/media/previews/rednotice.mp4',
   },
   {
