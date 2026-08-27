@@ -6,7 +6,31 @@ Vanilla HTML/CSS/JS frontend + **Express + Socket.io** backend (in-memory party 
 
 **Finale thesis:** *Tonight is a match, not a debate.* Full pitch, timed demo, and Q&A: see **[PITCH.md](PITCH.md)**.
 
-## Run
+## On another laptop
+
+```bash
+git clone https://github.com/siddco17/watch-together.git
+cd watch-together
+git lfs install
+git lfs pull
+npm install
+```
+
+Need [Node.js 18+](https://nodejs.org) and [Git LFS](https://git-lfs.com) (the clips are stored with LFS).
+
+**Start for a presentation**
+
+- Mac: double-click **Start Demo.command**
+- Windows: double-click **Start Demo.bat**
+- Or in a terminal: `npm run present`
+
+That starts the server and opens [http://localhost:3000](http://localhost:3000).
+
+**Clickable opener:** double-click **Watch Together.html**. If the demo is already running it jumps straight in; if not, use Start Demo first, then click **Open presentation**.
+
+Leave the Start Demo window open during the pitch. Close it to stop.
+
+## Run (terminal)
 
 ```bash
 npm install

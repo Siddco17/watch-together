@@ -28,6 +28,7 @@ app.use(express.json());
 app.use(express.static(ROOT));
 
 app.get('/api/health', (_req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.json({ ok: true, titles: TITLES.length });
 });
 
