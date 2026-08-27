@@ -1,8 +1,3 @@
-import { FRIENDS, VIBES, FALLBACK_TITLES, memberInitial, nightNameFor } from './data.js';
-import { createPartyClient, normalizeCode } from './party.js';
-import { createSwipeUI } from './swipe.js';
-import { createPlayerUI } from './player.js';
-
 const client = createPartyClient();
 let titles = FALLBACK_TITLES;
 let titlesById = new Map(titles.map((t) => [t.id, t]));
@@ -79,12 +74,12 @@ function enterPhase(party) {
 }
 
 async function loadTitles() {
+  if (location.protocol === 'file:') return;
   try {
     const res = await fetch('/api/titles');
     if (res.ok) {
       const remote = await res.json();
       const localById = new Map(FALLBACK_TITLES.map((t) => [t.id, t]));
-      // Only keep titles that have a playable clip
       titles = remote
         .map((t) => {
           const local = localById.get(t.id);
@@ -94,8 +89,8 @@ async function loadTitles() {
             ...t,
             title: local?.title || t.title,
             runtime: local?.runtime || t.runtime,
-            poster: t.poster || local?.poster,
-            video: t.video || local?.video,
+            poster: asRelativeMedia(t.poster || local?.poster),
+            video: asRelativeMedia(t.video || local?.video),
             art: local?.art || t.art,
           };
         })

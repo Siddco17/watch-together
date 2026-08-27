@@ -24,9 +24,9 @@ Need [Node.js 18+](https://nodejs.org) and [Git LFS](https://git-lfs.com) (the c
 - Windows: double-click **Start Demo.bat**
 - Or in a terminal: `npm run present`
 
-That starts the server and opens [http://localhost:3000](http://localhost:3000).
+**No localhost needed:** double-click **Watch Together.html** (or **index.html**). The demo runs in the browser from that file. Clips play from the `media/clips/` folder next to it.
 
-**Clickable opener:** double-click **Watch Together.html**. If the demo is already running it jumps straight in; if not, use Start Demo first, then click **Open presentation**.
+Two-browser live sync still needs the Node server (`npm start` or **Start Demo**).
 
 Leave the Start Demo window open during the pitch. Close it to stop.
 

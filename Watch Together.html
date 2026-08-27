@@ -3,120 +3,275 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Watch Together — Open presentation</title>
-  <link rel="icon" href="favicon.svg" />
-  <style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      min-height: 100%;
-      background: #000;
-      color: #fff;
-      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    }
-    body {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 32px 20px;
-    }
-    .card {
-      width: min(520px, 100%);
-      text-align: center;
-    }
-    .logo {
-      height: 38px;
-      width: auto;
-      margin: 0 auto 36px;
-      display: block;
-    }
-    h1 {
-      font-size: clamp(28px, 5vw, 42px);
-      font-weight: 700;
-      letter-spacing: -0.6px;
-      line-height: 1.1;
-    }
-    p {
-      margin-top: 14px;
-      color: #b3b3b3;
-      font-size: 16px;
-      line-height: 1.45;
-    }
-    .status {
-      margin-top: 18px;
-      font-size: 13px;
-      letter-spacing: 0.6px;
-      text-transform: uppercase;
-      color: #6b6b6b;
-    }
-    .status.ok { color: #46d369; }
-    .status.wait { color: #f5c518; }
-    .actions {
-      margin-top: 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: center;
-    }
-    a.btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 260px;
-      padding: 14px 22px;
-      border-radius: 4px;
-      background: #e50914;
-      color: #fff;
-      font: 700 16px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
-      text-decoration: none;
-    }
-    .hint {
-      margin-top: 28px;
-      font-size: 13px;
-      color: #6b6b6b;
-      line-height: 1.5;
-    }
-  </style>
+  <title>Watch Together — Netflix</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <main class="card">
-    <img class="logo" src="media/netflix-logo.svg" alt="Netflix" />
-    <h1>Watch Together</h1>
-    <p>Tonight is a match, not a debate.</p>
-    <p class="status wait" id="status">Looking for the demo on this computer…</p>
-    <div class="actions">
-      <a class="btn" id="open" href="http://localhost:3000">Open presentation</a>
+  <!-- 01 Who's Watching -->
+  <section class="screen is-on" id="profiles" aria-label="Who's Watching" aria-hidden="false">
+    <div class="nf-logo profiles-logo" data-home role="button" tabindex="0" aria-label="Netflix">
+      <img src="media/netflix-logo.svg" alt="Netflix" />
     </div>
-    <p class="hint">
-      If nothing opens, double-click <strong>Start Demo.command</strong> (Mac)
-      or <strong>Start Demo.bat</strong> (Windows), then click Open presentation.
-    </p>
-  </main>
-  <script>
-    const status = document.getElementById('status');
-    const DEMO = 'http://localhost:3000';
-    let tries = 0;
+    <div class="profiles-center">
+      <h1 class="profiles-title">Who's Watching?</h1>
+      <div class="profile-row" data-profiles>
+        <button type="button" class="profile-card" data-profile="sarah">
+          <div class="profile-art profile-sarah profile-smile" aria-hidden="true"></div>
+          <span>Sarah</span>
+        </button>
+        <button type="button" class="profile-card" data-profile="caleb">
+          <div class="profile-art profile-caleb profile-smile" aria-hidden="true"></div>
+          <span>Caleb</span>
+        </button>
+        <button type="button" class="profile-card" data-profile="children">
+          <div class="profile-art profile-kids" aria-hidden="true"><em>kids</em></div>
+          <span>Children</span>
+        </button>
+        <button type="button" class="profile-card" data-profile="watchparty">
+          <div class="profile-art profile-party" aria-hidden="true"></div>
+          <span>Watch Party</span>
+        </button>
+      </div>
+      <p class="profile-tip" data-profile-tip hidden></p>
+      <button type="button" class="btn btn-manage">Manage Profiles</button>
+    </div>
+  </section>
 
-    async function ping() {
-      try {
-        const res = await fetch(DEMO + '/api/health', { cache: 'no-store' });
-        if (!res.ok) throw new Error('down');
-        status.textContent = 'Demo is running — opening…';
-        status.className = 'status ok';
-        window.location.replace(DEMO);
-        return true;
-      } catch (_) {
-        tries += 1;
-        status.textContent = tries < 8
-          ? 'Demo is not running yet. Start it, then this page will jump in.'
-          : 'Start the demo, then click Open presentation.';
-        status.className = 'status wait';
-        return false;
-      }
-    }
+  <!-- 02 Invite / Start Party -->
+  <section class="screen" id="invite" aria-label="Watch Together" aria-hidden="true">
+    <nav class="nav">
+      <div class="nf-logo" data-home role="button" tabindex="0" aria-label="Netflix">
+        <img src="media/netflix-logo.svg" alt="Netflix" />
+      </div>
+      <div class="nav-links">
+        <span>Home</span><span>Shows</span><span>Movies</span>
+        <span>Games</span><span>New &amp; Popular</span><span>My List</span>
+      </div>
+      <div class="nav-spacer"></div>
+      <div class="nav-right">
+        <span class="icon-btn material-symbols-outlined" aria-hidden="true">search</span>
+        <span class="icon-btn material-symbols-outlined" aria-hidden="true">notifications</span>
+        <span class="avatar kids-avatar" data-nav-avatar>kids</span>
+        <span data-nav-name>Children</span>
+        <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
+      </div>
+    </nav>
+    <div class="hero">
+      <div class="copy">
+        <div class="kicker">WATCH TOGETHER</div>
+        <h2>Tonight is a match,<br />not a debate.</h2>
+        <p>Invite friends. Swipe titles like a playlist. Two matches and you're watching — no 40 minute group chat.</p>
+        <div class="mood-label">Party mood</div>
+        <div class="chips" data-chips role="group" aria-label="Party mood"></div>
+        <div class="join-inline">
+          <input class="join-input-field" data-join-code placeholder="Have a code? e.g. N-7K2Q" maxlength="12" spellcheck="false" autocomplete="off" />
+          <button type="button" class="btn btn-ghost" data-join>Join</button>
+        </div>
+        <p class="join-error" data-join-error hidden></p>
+      </div>
+      <aside class="invite-panel">
+        <h3>Invite Friends</h3>
+        <div class="friend-list" data-friends></div>
+        <button type="button" class="btn btn-red btn-block" data-start-party>Start Party</button>
+      </aside>
+    </div>
+  </section>
 
-    ping();
-    setInterval(ping, 1200);
-  </script>
+  <!-- 03 Title Match -->
+  <section class="screen" id="match" aria-label="Title Match" aria-hidden="true">
+    <div class="match-layout">
+      <nav class="nav">
+        <div class="nf-logo" data-home role="button" tabindex="0" aria-label="Netflix">
+          <img src="media/netflix-logo.svg" alt="Netflix" />
+        </div>
+        <div class="nav-links">
+          <span>Home</span><span>Shows</span><span>Movies</span>
+          <span>Games</span><span>New &amp; Popular</span><span>My List</span>
+        </div>
+        <div class="nav-spacer"></div>
+        <div class="nav-right">
+          <span class="avatar kids-avatar" data-nav-avatar>kids</span>
+          <span data-nav-name>Children</span>
+          <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
+        </div>
+      </nav>
+      <div class="match-head">
+        <div class="match-head-main">
+          <h2 data-night>Friday Spy Night</h2>
+          <span class="left-count" data-left>0 left</span>
+          <button type="button" class="btn btn-quiet" data-undo disabled>Undo</button>
+          <span class="code-chip">Code <strong data-party-code>—</strong>
+            <button type="button" class="linkish" data-copy-code>Copy</button>
+          </span>
+        </div>
+        <div class="match-live">
+          <div class="status-pills" data-status></div>
+          <div class="swipe-feed" data-swipe-feed aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="party-friends" data-party-friends></div>
+      <div class="match-body">
+        <div class="deck-col">
+          <div class="deck" data-deck></div>
+          <div class="actions" data-actions>
+            <button type="button" class="round pass" data-action="pass" title="Pass"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="round later" data-action="later" title="Later"><span class="material-symbols-outlined">keyboard_arrow_up</span></button>
+            <button type="button" class="round heart" data-action="match" title="Match"><span class="material-symbols-outlined filled">favorite</span></button>
+          </div>
+          <p class="hint">Everyone swipes at once — agree in under a minute. Two matches = it’s on the night. Left pass · Right match · Up later.</p>
+        </div>
+        <aside class="rail" data-rail></aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 In-session -->
+  <section class="screen" id="watch" aria-label="Watch session" aria-hidden="true">
+    <div class="player">
+      <video playsinline preload="metadata"></video>
+      <div class="subtitle-overlay" data-subs aria-live="polite"></div>
+      <div class="presence">
+        <button type="button" class="player-back" data-back title="Back to matching">
+          <span class="material-symbols-outlined">arrow_back</span>
+          <span>Back</span>
+        </button>
+        <div class="presence-right">
+          <span class="sync" data-sync>You're all at 0:00:00</span>
+          <button type="button" class="quiet on" data-quiet title="Spoiler-safe presence — keep reactions subtle">Quiet · spoiler-safe</button>
+          <div class="react-bar" data-react-bar>
+            <button type="button" data-react="😭" title="Sad">😭</button>
+            <button type="button" data-react="😂" title="Laugh">😂</button>
+            <button type="button" data-react="❤️" title="Love">❤️</button>
+            <button type="button" data-react="🔥" title="Fire">🔥</button>
+            <button type="button" data-react="😨" title="Shock">😨</button>
+          </div>
+        </div>
+      </div>
+      <div class="couch" data-couch>
+        <div class="avatar-row" data-avatars></div>
+        <span class="couch-label" data-couch-label>The couch • All here</span>
+      </div>
+      <div class="react-layer" data-react-layer></div>
+      <div class="chat-panel" data-chat-panel hidden>
+        <div class="chat-panel-head">
+          <h3>Party chat</h3>
+          <button type="button" class="chat-close" data-chat-close aria-label="Close chat">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="chat-messages" data-chat-messages></div>
+        <form class="chat-compose" data-chat-form>
+          <input type="text" data-chat-input placeholder="Say something…" maxlength="280" autocomplete="off" />
+          <button type="submit" class="btn btn-red btn-sm" aria-label="Send">
+            <span class="material-symbols-outlined">send</span>
+          </button>
+        </form>
+      </div>
+      <div class="chrome" data-chrome>
+        <div class="progress" data-progress>
+          <i data-fill></i>
+          <b data-scrub></b>
+          <span class="progress-time" data-time>0:00</span>
+        </div>
+        <div class="controls">
+          <button type="button" class="ctrl" data-play title="Play"><span class="material-symbols-outlined" data-play-icon>play_arrow</span></button>
+          <button type="button" class="ctrl" data-back10 title="Back 10s"><span class="material-symbols-outlined">replay_10</span></button>
+          <button type="button" class="ctrl" data-fwd10 title="Forward 10s"><span class="material-symbols-outlined">forward_10</span></button>
+          <div class="volume-wrap" data-volume-wrap>
+            <button type="button" class="ctrl" data-volume title="Volume">
+              <span class="material-symbols-outlined" data-volume-icon>volume_up</span>
+            </button>
+            <div class="volume-popover" data-volume-popover>
+              <input type="range" class="volume-range" data-volume-range min="0" max="100" value="100" step="1" aria-label="Volume" />
+            </div>
+          </div>
+          <div class="player-center">
+            <span class="title" data-title>Title</span>
+          </div>
+          <button type="button" class="ctrl" data-mic title="Microphone" aria-pressed="false">
+            <span class="material-symbols-outlined" data-mic-icon>mic_off</span>
+          </button>
+          <button type="button" class="ctrl" data-chat-toggle title="Chat" aria-pressed="false">
+            <span class="material-symbols-outlined">chat_bubble</span>
+          </button>
+          <button type="button" class="ctrl" data-cc title="Subtitles" aria-pressed="false">
+            <span class="material-symbols-outlined" data-cc-icon>closed_caption_off</span>
+          </button>
+          <button type="button" class="ctrl" data-speed title="Speed"><span class="material-symbols-outlined">speed</span></button>
+          <button type="button" class="ctrl" data-fullscreen title="Fullscreen"><span class="material-symbols-outlined">fullscreen</span></button>
+          <button type="button" class="btn btn-red btn-sm" data-end>End night</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 Wrap-up -->
+  <section class="screen" id="wrap" aria-label="Session wrap-up" aria-hidden="true">
+    <div class="wrap-layout">
+      <nav class="nav">
+        <div class="nf-logo" data-home role="button" tabindex="0" aria-label="Netflix">
+          <img src="media/netflix-logo.svg" alt="Netflix" />
+        </div>
+        <div class="nav-links">
+          <span>Home</span><span>Shows</span><span>Movies</span>
+          <span>Games</span><span>New &amp; Popular</span><span>My List</span>
+        </div>
+        <div class="nav-spacer"></div>
+        <div class="nav-right">
+          <span class="avatar kids-avatar" data-nav-avatar>kids</span>
+          <span data-nav-name>Children</span>
+          <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
+        </div>
+      </nav>
+      <div class="wrap-body">
+        <div class="wrap-main">
+          <p class="wrap-kicker">Night wrap-up</p>
+          <div class="recap-still art-raazi" data-wrap-still>
+            <div class="cap">
+              <h3 data-wrap-title>RAAZI</h3>
+              <span data-wrap-meta>Clip · Spy</span>
+            </div>
+          </div>
+          <div class="highlights">
+            <div class="tag"><strong>Loudest reaction</strong><span data-wrap-loud>A shared moment</span></div>
+            <div class="tag"><strong>Re-watched scenes</strong><span data-wrap-rewatch>Shared moments</span></div>
+          </div>
+          <div class="cta-wrap">
+            <button type="button" class="btn btn-red" data-watch-matched>Watch something matched</button>
+            <button type="button" class="btn btn-ghost" data-save-night>Save this night</button>
+          </div>
+        </div>
+        <aside class="rate">
+          <h3>Rating together</h3>
+          <p class="rate-sub">One score for the party — no arguments.</p>
+          <div class="stars" data-stars></div>
+          <div class="votes" data-wrap-votes></div>
+          <p class="party-score" data-party-score></p>
+          <div class="leftover">
+            <h4>For your next watch</h4>
+            <div class="poster-row" data-next-watch></div>
+          </div>
+          <p class="code-hint">Party code <strong data-party-code>—</strong>
+            <button type="button" class="linkish" data-copy-code>Copy</button>
+          </p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" data-toast hidden></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/local-room.js"></script>
+  <script src="js/party.js"></script>
+  <script src="js/swipe.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

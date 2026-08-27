@@ -1,4 +1,4 @@
-export const FRIENDS = [
+var FRIENDS = [
   { id: 'abha', name: 'Abha', color: '#e91e8c', status: 'offline' },
   { id: 'meera', name: 'Meera', color: '#4a5568', status: 'watching' },
   { id: 'shreya', name: 'Shreya', color: '#2458b5', status: 'active' },
@@ -8,7 +8,7 @@ export const FRIENDS = [
   { id: 'lakshya', name: 'Lakshya', color: '#c47a12', status: 'offline' },
 ];
 
-export const VIBES = [
+var VIBES = [
   'Comfort',
   'Thrills',
   'Romance',
@@ -19,15 +19,15 @@ export const VIBES = [
   'New this week',
 ];
 
-export const PROFILES = [
+var PROFILES = [
   { id: 'sarah', name: 'Sarah', kind: 'user', art: 'profile-sarah' },
   { id: 'caleb', name: 'Caleb', kind: 'user', art: 'profile-caleb' },
   { id: 'children', name: 'Children', kind: 'kids', art: 'profile-kids' },
   { id: 'watchparty', name: 'Watch Party', kind: 'party', art: 'profile-party' },
 ];
 
-/** Client-side catalog mirror; server is source of truth after /api/titles */
-export const FALLBACK_TITLES = [
+/** Client-side catalog; used as-is when opened as a file (no localhost). */
+var FALLBACK_TITLES = [
   {
     id: 'enola',
     title: 'Enola Holmes',
@@ -37,8 +37,8 @@ export const FALLBACK_TITLES = [
     year: 2020,
     vibes: ['Comfort', 'Thrills', 'Drama', 'Feel-good'],
     art: 'art-enola',
-    poster: '/media/posters/enola.jpg',
-    video: '/media/clips/enola.mp4',
+    poster: 'media/posters/enola.jpg',
+    video: 'media/clips/enola.mp4',
   },
   {
     id: 'maybe',
@@ -49,8 +49,8 @@ export const FALLBACK_TITLES = [
     year: 2019,
     vibes: ['Comfort', 'Romance', 'Comedy', 'Feel-good'],
     art: 'art-maybe',
-    poster: '/media/posters/maybe.jpg',
-    video: '/media/clips/maybe.mp4',
+    poster: 'media/posters/maybe.jpg',
+    video: 'media/clips/maybe.mp4',
   },
   {
     id: 'raazi',
@@ -61,8 +61,8 @@ export const FALLBACK_TITLES = [
     year: 2018,
     vibes: ['Thrills', 'Action', 'Drama'],
     art: 'art-raazi',
-    poster: '/media/posters/raazi.jpg',
-    video: '/media/clips/raazi.mp4',
+    poster: 'media/posters/raazi.jpg',
+    video: 'media/clips/raazi.mp4',
   },
   {
     id: 'adam',
@@ -73,8 +73,8 @@ export const FALLBACK_TITLES = [
     year: 2022,
     vibes: ['Comedy', 'Action', 'Feel-good', 'New this week'],
     art: 'art-adam',
-    poster: '/media/posters/adam.jpg',
-    video: '/media/clips/adam.mp4',
+    poster: 'media/posters/adam.jpg',
+    video: 'media/clips/adam.mp4',
   },
   {
     id: 'rednotice',
@@ -85,8 +85,8 @@ export const FALLBACK_TITLES = [
     year: 2021,
     vibes: ['Thrills', 'Action', 'Comedy'],
     art: 'art-rednotice',
-    poster: '/media/posters/rednotice.jpg',
-    video: '/media/clips/rednotice.mp4',
+    poster: 'media/posters/rednotice.jpg',
+    video: 'media/clips/rednotice.mp4',
   },
   {
     id: 'voicemails',
@@ -97,14 +97,14 @@ export const FALLBACK_TITLES = [
     year: 2024,
     vibes: ['Comfort', 'Drama', 'Romance', 'New this week'],
     art: 'art-voicemails',
-    poster: '/media/posters/voicemails.png',
-    video: '/media/clips/voicemails.mp4',
+    poster: 'media/posters/voicemails.png',
+    video: 'media/clips/voicemails.mp4',
   },
 ];
 
-export const SAMPLE_VIDEO = '/media/clips/raazi.mp4';
+var SAMPLE_VIDEO = 'media/clips/raazi.mp4';
 
-export const NIGHT_NAMES = {
+var NIGHT_NAMES = {
   Comfort: 'Friday Comfort Night',
   Thrills: 'Friday Spy Night',
   Romance: 'Friday Romance Night',
@@ -115,17 +115,17 @@ export const NIGHT_NAMES = {
   'New this week': 'New This Week',
 };
 
-export function nightNameFor(vibe) {
+function nightNameFor(vibe) {
   return NIGHT_NAMES[vibe] || 'Friday Night';
 }
 
-export const SAMPLE_CHAT = [
+var SAMPLE_CHAT = [
   { name: 'Shreya', text: 'this is the scene', memberId: 'sample-shreya' },
   { name: 'Rohit', text: 'wait — rewind that', memberId: 'sample-rohit' },
   { name: 'Lakshya', text: 'Quiet on for this bit', memberId: 'sample-lakshya' },
 ];
 
-export function formatTime(sec) {
+function formatTime(sec) {
   const s = Math.max(0, Math.floor(sec || 0));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
@@ -136,10 +136,24 @@ export function formatTime(sec) {
   return `${m}:${String(r).padStart(2, '0')}`;
 }
 
-export function memberInitial(name) {
+function memberInitial(name) {
   return (name || '?').trim().charAt(0).toUpperCase();
 }
 
-export function videoForTitle(title) {
+function videoForTitle(title) {
   return title?.video || SAMPLE_VIDEO;
+}
+
+function resolveMedia(src) {
+  if (!src) return '';
+  const rel = String(src).replace(/^\//, '');
+  try {
+    return new URL(rel, document.baseURI || location.href).href;
+  } catch (_) {
+    return rel;
+  }
+}
+
+function asRelativeMedia(src) {
+  return String(src || '').replace(/^\//, '');
 }
