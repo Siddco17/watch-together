@@ -413,14 +413,17 @@ input:focus-visible {
 .btn-add.busy { background: #3a1414; color: #f08080; cursor: default; }
 .status-dot {
   position: absolute;
-  right: -1px; bottom: -1px;
-  width: 10px; height: 10px;
+  right: -2px;
+  bottom: -2px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  border: 2px solid #181818;
+  border: 2px solid #141414;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.18);
 }
-.status-dot.on { background: #2ecc71; }
+.status-dot.on { background: #46d369; }
 .status-dot.watch { background: #e50914; }
-.status-dot.off { background: #808080; }
+.status-dot.off { background: #b3b3b3; }
 
 /* ----- Match ----- */
 .match-layout {
