@@ -1,6 +1,32 @@
 import { FRIENDS } from './data.js';
 
 const MEMBER_KEY = 'wt_member';
+const PARTY_KEY = 'wt_party';
+
+function persistCode(code) {
+  try {
+    if (code) sessionStorage.setItem(PARTY_KEY, code);
+    else sessionStorage.removeItem(PARTY_KEY);
+  } catch (_) {}
+}
+
+function savedCode() {
+  try {
+    return sessionStorage.getItem(PARTY_KEY);
+  } catch (_) {
+    return null;
+  }
+}
+
+export function normalizeCode(raw) {
+  let s = String(raw || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '');
+  if (/^[A-Z0-9]{4}$/.test(s)) s = 'N-' + s;
+  else if (/^N[A-Z0-9]{4}$/.test(s)) s = 'N-' + s.slice(1);
+  return s;
+}
 
 function loadMember() {
   try {
@@ -44,9 +70,47 @@ export function createPartyClient() {
     state.listeners.forEach((fn) => fn(event, payload));
   }
 
+  function rejoinIfNeeded() {
+    const code = state.party?.code || savedCode();
+    if (!code) return;
+    socket.emit(
+      'party:join',
+      {
+        code: normalizeCode(code),
+        id: state.member.id,
+        name: state.member.name,
+        color: state.member.color,
+      },
+      (res) => {
+        if (res?.state) {
+          state.party = res.state;
+          persistCode(res.state.code);
+          notify('party:state', res.state);
+        } else if (res && res.ok === false) {
+          persistCode(null);
+        }
+      }
+    );
+  }
+
+  function waitConnected(ms = 4000) {
+    if (state.connected || socket.connected) {
+      state.connected = true;
+      return Promise.resolve(true);
+    }
+    return new Promise((resolve) => {
+      const t = setTimeout(() => resolve(false), ms);
+      socket.once('connect', () => {
+        clearTimeout(t);
+        resolve(true);
+      });
+    });
+  }
+
   socket.on('connect', () => {
     state.connected = true;
     notify('connect');
+    rejoinIfNeeded();
   });
 
   socket.on('disconnect', () => {
@@ -104,6 +168,11 @@ export function createPartyClient() {
     get friends() {
       return FRIENDS;
     },
+    get connected() {
+      return state.connected;
+    },
+    savedCode,
+    waitConnected,
     on(fn) {
       state.listeners.add(fn);
       return () => state.listeners.delete(fn);
@@ -131,8 +200,16 @@ export function createPartyClient() {
         role: f.online ? 'added' : 'invited',
       }));
     },
-    createParty({ nightName } = {}) {
+    async createParty({ nightName } = {}) {
+      const ready = await waitConnected();
+      if (!ready) return { ok: false, error: 'Could not connect. Try again.' };
       return new Promise((resolve) => {
+        let done = false;
+        const t = setTimeout(() => {
+          if (done) return;
+          done = true;
+          resolve({ ok: false, error: 'Could not start party. Try again.' });
+        }, 6000);
         socket.emit(
           'party:create',
           {
@@ -145,24 +222,46 @@ export function createPartyClient() {
             friends: this.getPartyFriends(),
           },
           (res) => {
-            if (res?.state) state.party = res.state;
+            if (done) return;
+            done = true;
+            clearTimeout(t);
+            if (res?.state) {
+              state.party = res.state;
+              persistCode(res.state.code);
+            }
             resolve(res);
           }
         );
       });
     },
-    joinParty(code) {
+    async joinParty(code) {
+      const ready = await waitConnected();
+      if (!ready) return { ok: false, error: 'Could not connect. Try again.' };
+      const normalized = normalizeCode(code);
+      if (!normalized) return { ok: false, error: 'Enter a party code' };
       return new Promise((resolve) => {
+        let done = false;
+        const t = setTimeout(() => {
+          if (done) return;
+          done = true;
+          resolve({ ok: false, error: 'Could not join. Try again.' });
+        }, 6000);
         socket.emit(
           'party:join',
           {
-            code: String(code || '').trim().toUpperCase(),
+            code: normalized,
             id: state.member.id,
             name: state.member.name,
             color: state.member.color,
           },
           (res) => {
-            if (res?.state) state.party = res.state;
+            if (done) return;
+            done = true;
+            clearTimeout(t);
+            if (res?.state) {
+              state.party = res.state;
+              persistCode(res.state.code);
+            }
             resolve(res);
           }
         );
@@ -170,10 +269,19 @@ export function createPartyClient() {
     },
     setPhase(phase, extra = {}) {
       return new Promise((resolve) => {
+        let done = false;
+        const t = setTimeout(() => {
+          if (done) return;
+          done = true;
+          resolve({ ok: false, error: 'Timed out' });
+        }, 6000);
         socket.emit(
           'party:phase',
           { phase, ...extra, code: state.party?.code },
           (res) => {
+            if (done) return;
+            done = true;
+            clearTimeout(t);
             if (res?.state) state.party = res.state;
             resolve(res);
           }
@@ -186,6 +294,13 @@ export function createPartyClient() {
         memberId: state.member.id,
         titleId,
         action,
+      });
+    },
+    undo(titleId) {
+      socket.emit('swipe:undo', {
+        code: state.party?.code,
+        memberId: state.member.id,
+        titleId,
       });
     },
     playerCommand(cmd) {

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Watch Together — Netflix</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -13,8 +14,10 @@
 </head>
 <body>
   <!-- 01 Who's Watching -->
-  <section class="screen is-on" id="profiles" aria-label="Who's Watching">
-    <div class="nf-logo profiles-logo">NETFLIX</div>
+  <section class="screen is-on" id="profiles" aria-label="Who's Watching" aria-hidden="false">
+    <div class="nf-logo profiles-logo" data-home role="button" tabindex="0" aria-label="Netflix">
+      <img src="/media/netflix-logo.svg" alt="Netflix" />
+    </div>
     <div class="profiles-center">
       <h1 class="profiles-title">Who's Watching?</h1>
       <div class="profile-row" data-profiles>
@@ -41,9 +44,11 @@
   </section>
 
   <!-- 02 Invite / Start Party -->
-  <section class="screen" id="invite" aria-label="Watch Together">
+  <section class="screen" id="invite" aria-label="Watch Together" aria-hidden="true">
     <nav class="nav">
-      <div class="nf-logo">NETFLIX</div>
+      <div class="nf-logo" data-home role="button" tabindex="0" aria-label="Netflix">
+        <img src="/media/netflix-logo.svg" alt="Netflix" />
+      </div>
       <div class="nav-links">
         <span>Home</span><span>Shows</span><span>Movies</span>
         <span>Games</span><span>New &amp; Popular</span><span>My List</span>
@@ -52,8 +57,8 @@
       <div class="nav-right">
         <span class="icon-btn material-symbols-outlined" aria-hidden="true">search</span>
         <span class="icon-btn material-symbols-outlined" aria-hidden="true">notifications</span>
-        <span class="avatar kids-avatar">kids</span>
-        <span>Children</span>
+        <span class="avatar kids-avatar" data-nav-avatar>kids</span>
+        <span data-nav-name>Children</span>
         <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
       </div>
     </nav>
@@ -65,9 +70,10 @@
         <div class="mood-label">Party mood</div>
         <div class="chips" data-chips role="group" aria-label="Party mood"></div>
         <div class="join-inline">
-          <input class="join-input-field" data-join-code placeholder="Have a code? e.g. N-7K2Q" maxlength="8" />
+          <input class="join-input-field" data-join-code placeholder="Have a code? e.g. N-7K2Q" maxlength="12" spellcheck="false" autocomplete="off" />
           <button type="button" class="btn btn-ghost" data-join>Join</button>
         </div>
+        <p class="join-error" data-join-error hidden></p>
       </div>
       <aside class="invite-panel">
         <h3>Invite Friends</h3>
@@ -78,25 +84,27 @@
   </section>
 
   <!-- 03 Title Match -->
-  <section class="screen" id="match" aria-label="Title Match">
+  <section class="screen" id="match" aria-label="Title Match" aria-hidden="true">
     <div class="match-layout">
       <nav class="nav">
-        <div class="nf-logo">NETFLIX</div>
+        <div class="nf-logo" data-home role="button" tabindex="0" aria-label="Netflix">
+          <img src="/media/netflix-logo.svg" alt="Netflix" />
+        </div>
         <div class="nav-links">
           <span>Home</span><span>Shows</span><span>Movies</span>
           <span>Games</span><span>New &amp; Popular</span><span>My List</span>
         </div>
         <div class="nav-spacer"></div>
         <div class="nav-right">
-          <span class="avatar kids-avatar">kids</span>
-          <span>Children</span>
+          <span class="avatar kids-avatar" data-nav-avatar>kids</span>
+          <span data-nav-name>Children</span>
           <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
         </div>
       </nav>
       <div class="match-head">
         <h2 data-night>Friday Spy Night</h2>
         <span class="left-count" data-left>0 left</span>
-        <button type="button" class="btn btn-quiet" data-undo>Undo</button>
+        <button type="button" class="btn btn-quiet" data-undo disabled>Undo</button>
         <span class="code-chip">Code <strong data-party-code>—</strong>
           <button type="button" class="linkish" data-copy-code>Copy</button>
         </span>
@@ -119,9 +127,9 @@
   </section>
 
   <!-- 04 In-session -->
-  <section class="screen" id="watch" aria-label="Watch session">
+  <section class="screen" id="watch" aria-label="Watch session" aria-hidden="true">
     <div class="player">
-      <video playsinline></video>
+      <video playsinline preload="metadata"></video>
       <div class="subtitle-overlay" data-subs aria-live="polite"></div>
       <div class="presence">
         <button type="button" class="player-back" data-back title="Back to matching">
@@ -199,18 +207,20 @@
   </section>
 
   <!-- 05 Wrap-up -->
-  <section class="screen" id="wrap" aria-label="Session wrap-up">
+  <section class="screen" id="wrap" aria-label="Session wrap-up" aria-hidden="true">
     <div class="wrap-layout">
       <nav class="nav">
-        <div class="nf-logo">NETFLIX</div>
+        <div class="nf-logo" data-home role="button" tabindex="0" aria-label="Netflix">
+          <img src="/media/netflix-logo.svg" alt="Netflix" />
+        </div>
         <div class="nav-links">
           <span>Home</span><span>Shows</span><span>Movies</span>
           <span>Games</span><span>New &amp; Popular</span><span>My List</span>
         </div>
         <div class="nav-spacer"></div>
         <div class="nav-right">
-          <span class="avatar kids-avatar">kids</span>
-          <span>Children</span>
+          <span class="avatar kids-avatar" data-nav-avatar>kids</span>
+          <span data-nav-name>Children</span>
           <button type="button" class="wp-badge" data-nav-party title="Watch Party" aria-label="Watch Party"></button>
         </div>
       </nav>
@@ -224,8 +234,8 @@
             </div>
           </div>
           <div class="highlights">
-            <div class="tag"><strong>Loudest reaction</strong><span>3:26:30</span></div>
-            <div class="tag"><strong>Re-watched scenes</strong><span>Shared moments</span></div>
+            <div class="tag"><strong>Loudest reaction</strong><span data-wrap-loud>A shared moment</span></div>
+            <div class="tag"><strong>Re-watched scenes</strong><span data-wrap-rewatch>Shared moments</span></div>
           </div>
           <div class="cta-wrap">
             <button type="button" class="btn btn-red" data-watch-matched>Watch something matched</button>
@@ -249,6 +259,8 @@
       </div>
     </div>
   </section>
+
+  <div class="toast" data-toast hidden></div>
 
   <script type="module" src="js/app.js"></script>
 </body>

@@ -15,8 +15,12 @@ function deckForVibe(vibe) {
   return list.map((t) => t.id);
 }
 
+function activeMembers(room) {
+  return room.members.filter((m) => !m.left && m.status !== 'invited');
+}
+
 function publicState(room) {
-  const memberCount = room.members.filter((m) => !m.left && m.status !== 'invited').length ||
+  const memberCount = activeMembers(room).length ||
     room.members.filter((m) => !m.left).length;
   const matched = [];
   for (const [titleId, votes] of Object.entries(room.votes)) {
@@ -39,14 +43,16 @@ function publicState(room) {
       color: m.color,
       status: m.status,
       isBot: !!m.isBot,
+      micOn: !!m.micOn,
       lastAction: m.lastAction || null,
     })),
     deck: room.deck,
     votes: room.votes,
     matched,
-    playback: room.playback,
+    playback: getPlaybackNow(room),
     ratings: room.ratings,
     invited: room.invited,
+    chat: (room.chat || []).slice(-40),
   };
 }
 
@@ -73,9 +79,10 @@ function createRoom({ hostId, name, color, vibe, nightName, friends }) {
     ],
     deck: deckForVibe(vibe || 'Comfort'),
     votes: {},
-    playback: { titleId: null, t: 0, paused: true, updatedAt: Date.now() },
+    playback: { titleId: null, t: 0, paused: true, rate: 1, updatedAt: Date.now() },
     ratings: {},
     invited: [],
+    chat: [],
     botTimers: [],
   };
 
@@ -102,21 +109,28 @@ function getRoom(code) {
   return rooms.get(String(code).toUpperCase()) || null;
 }
 
+function phaseStatus(room) {
+  if (room.phase === 'wrap') return 'rating';
+  if (room.phase === 'watch') return 'watching';
+  return 'swiping';
+}
+
 function joinRoom(code, { id, name, color }) {
   const room = getRoom(code);
   if (!room) return { error: 'Party not found' };
+  clearTimeout(room.cleanupTimer);
   const existing = room.members.find((m) => m.id === id);
   if (existing) {
     existing.left = false;
     existing.name = name || existing.name;
     existing.color = color || existing.color;
-    existing.status = room.phase === 'match' ? 'swiping' : 'watching';
+    if (existing.status !== 'invited') existing.status = phaseStatus(room);
   } else {
     room.members.push({
       id,
       name: name || 'Guest',
       color: color || '#2458b5',
-      status: room.phase === 'match' ? 'swiping' : 'watching',
+      status: phaseStatus(room),
       isBot: false,
       canSwipe: true,
       left: false,
@@ -125,16 +139,24 @@ function joinRoom(code, { id, name, color }) {
   return { room };
 }
 
+function scheduleRoomCleanup(room) {
+  clearTimeout(room.cleanupTimer);
+  room.cleanupTimer = setTimeout(() => {
+    const humans = room.members.filter((x) => !x.isBot && !x.left);
+    if (!humans.length) {
+      clearBotTimers(room);
+      rooms.delete(room.code);
+    }
+  }, 60000);
+}
+
 function leaveRoom(code, memberId) {
   const room = getRoom(code);
   if (!room) return;
   const m = room.members.find((x) => x.id === memberId);
   if (m && !m.isBot) m.left = true;
   const humans = room.members.filter((x) => !x.isBot && !x.left);
-  if (!humans.length) {
-    clearBotTimers(room);
-    rooms.delete(room.code);
-  }
+  if (!humans.length) scheduleRoomCleanup(room);
 }
 
 function setInvited(room, friendIds) {
@@ -158,25 +180,51 @@ function recordSwipe(room, memberId, titleId, action) {
   return { count, isNewMatch: count === 2 && action === 'match' };
 }
 
+function undoSwipe(room, memberId, titleId) {
+  if (!titleId || !room.votes[titleId] || room.votes[titleId][memberId] == null) {
+    return { ok: false };
+  }
+  delete room.votes[titleId][memberId];
+  const member = room.members.find((m) => m.id === memberId);
+  if (member) {
+    if (member.lastAction?.titleId === titleId) member.lastAction = null;
+    const remaining = room.deck.filter((id) => !room.votes[id]?.[memberId]);
+    if (member.status !== 'invited') {
+      member.status = remaining.length ? 'swiping' : 'matched';
+    }
+  }
+  return { ok: true, titleId };
+}
+
 function setPhase(room, phase, extra = {}) {
   room.phase = phase;
   if (phase === 'watch' && extra.titleId) {
+    const prev = getPlaybackNow(room);
+    const sameTitle = prev.titleId === extra.titleId;
     room.playback = {
       titleId: extra.titleId,
-      t: 0,
-      paused: true,
+      t: sameTitle ? prev.t || 0 : 0,
+      paused: false,
+      rate: prev.rate || 1,
       updatedAt: Date.now(),
     };
     room.members.forEach((m) => {
-      if (!m.left) m.status = 'watching';
+      if (!m.left && m.status !== 'invited') m.status = 'watching';
     });
   }
   if (phase === 'wrap') {
+    if (room.playback) applyPlayback(room, { paused: true });
     room.members.forEach((m) => {
-      if (!m.left) m.status = 'rating';
+      if (!m.left && m.status !== 'invited') {
+        m.status = 'rating';
+        if (m.isBot && m.canSwipe && !room.ratings[m.id]) {
+          room.ratings[m.id] = Math.random() < 0.35 ? 5 : 4;
+        }
+      }
     });
   }
   if (phase === 'match') {
+    if (room.playback && !room.playback.paused) applyPlayback(room, { paused: true });
     room.members.forEach((m) => {
       if (!m.left && m.status !== 'invited') m.status = 'swiping';
     });
@@ -192,6 +240,7 @@ function applyPlayback(room, cmd) {
   if (typeof cmd.t === 'number') pb.t = Math.max(0, cmd.t);
   if (typeof cmd.paused === 'boolean') pb.paused = cmd.paused;
   if (cmd.titleId) pb.titleId = cmd.titleId;
+  if (typeof cmd.rate === 'number' && cmd.rate > 0) pb.rate = cmd.rate;
   pb.updatedAt = now;
   return pb;
 }
@@ -251,6 +300,7 @@ module.exports = {
   leaveRoom,
   setInvited,
   recordSwipe,
+  undoSwipe,
   setPhase,
   applyPlayback,
   getPlaybackNow,

@@ -38,11 +38,13 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
   const playerEl = root.querySelector('.player') || root;
   const chromeEl = root.querySelector('[data-chrome]') || root.querySelector('.chrome');
 
-  let applyingRemote = false;
+  let ignoreUntil = 0;
   let quiet = true;
   let lastCmd = 0;
   let volumeLevel = 1;
+  let lastAudible = 1;
   let micOn = false;
+  let session = { lastReactT: null, rewindCount: 0 };
   let micStream = null;
   let chatOpen = false;
   let ccOn = false;
@@ -54,6 +56,7 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
   let speedIdx = 0;
   let chromeHideTimer = null;
   const CHROME_IDLE_MS = 2600;
+  let loadGen = 0;
 
   if (video) {
     video.src = SAMPLE_VIDEO;
@@ -77,32 +80,41 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     playerEl.classList.remove('is-awake');
   }
 
-  function loadTitleVideo(title, seekTo = 0, paused = true) {
+  function beginRemote() {
+    ignoreUntil = Date.now() + 220;
+  }
+
+  function isRemote() {
+    return Date.now() < ignoreUntil;
+  }
+
+  function loadTitleVideo(title, seekTo = 0, paused = true, rate = 1) {
     if (!video || !title) return;
+    const gen = ++loadGen;
     const src = videoForTitle(title);
     const abs = new URL(src, location.origin).href;
-    const changed = !video.currentSrc || video.currentSrc !== abs;
-    if (changed) {
+    const currentAbs = video.src || '';
+    if (currentAbs !== abs) {
       video.src = src;
       video.load();
     }
     const applySeek = () => {
-      applyingRemote = true;
+      if (gen !== loadGen) return;
+      beginRemote();
       try {
         video.currentTime = seekTo || 0;
+        video.playbackRate = rate || 1;
+        const idx = speeds.indexOf(rate);
+        if (idx >= 0) speedIdx = idx;
         if (paused) video.pause();
         else video.play().catch(() => {});
       } finally {
-        applyingRemote = false;
         updateChrome();
         updateSubs();
       }
     };
-    if (changed) {
-      video.addEventListener('loadedmetadata', applySeek, { once: true });
-    } else {
-      applySeek();
-    }
+    if (video.readyState >= 1) applySeek();
+    else video.addEventListener('loadedmetadata', applySeek, { once: true });
   }
 
   function parseVtt(text) {
@@ -174,7 +186,7 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
       avatarsEl.innerHTML = members
         .map(
           (m) =>
-            `<span class="avatar sm party-avatar" style="background:${m.color}" data-name="${escapeHtml(m.name)}" title="${escapeHtml(m.name)}" aria-label="${escapeHtml(m.name)}">${memberInitial(m.name)}<span class="avatar-tip">${escapeHtml(m.name)}</span></span>`
+            `<span class="avatar sm party-avatar${m.micOn ? ' is-live' : ''}" style="background:${escapeHtml(m.color)}" data-name="${escapeHtml(m.name)}" title="${escapeHtml(m.name)}" aria-label="${escapeHtml(m.name)}">${escapeHtml(memberInitial(m.name))}<span class="avatar-tip">${escapeHtml(m.name)}</span></span>`
         )
         .join('');
       const label = root.querySelector('[data-couch-label]');
@@ -193,7 +205,10 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     const pct = dur ? (cur / dur) * 100 : 0;
     if (fill) fill.style.width = pct + '%';
     if (scrub) scrub.style.left = pct + '%';
-    if (timeEl) timeEl.textContent = formatTime(dur || 0);
+    if (timeEl) {
+      const left = dur ? Math.max(0, dur - cur) : 0;
+      timeEl.textContent = dur ? `-${formatTime(left)}` : '0:00';
+    }
     if (syncEl) syncEl.textContent = `You're all at ${formatTime(cur)}`;
     if (playIcon) playIcon.textContent = video.paused ? 'play_arrow' : 'pause';
   }
@@ -205,6 +220,7 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     client.playerCommand({
       t: video?.currentTime ?? 0,
       paused: video?.paused ?? true,
+      rate: video?.playbackRate || 1,
       titleId: client.party?.playback?.titleId,
       ...partial,
     });
@@ -216,26 +232,32 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     if (t) {
       const src = videoForTitle(t);
       const abs = new URL(src, location.origin).href;
-      if (!video.currentSrc || video.currentSrc !== abs) {
-        loadTitleVideo(t, playback.t || 0, playback.paused !== false);
+      if ((video.src || '') !== abs || video.readyState < 1) {
+        loadTitleVideo(t, playback.t || 0, playback.paused !== false, playback.rate || 1);
         return;
       }
     }
-    applyingRemote = true;
+    loadGen += 1;
+    beginRemote();
     const target = playback.t || 0;
     if (Math.abs(video.currentTime - target) > 0.45) {
       video.currentTime = target;
+    }
+    if (playback.rate && Math.abs(video.playbackRate - playback.rate) > 0.01) {
+      video.playbackRate = playback.rate;
+      const idx = speeds.indexOf(playback.rate);
+      if (idx >= 0) speedIdx = idx;
     }
     if (playback.paused && !video.paused) video.pause();
     if (!playback.paused && video.paused) {
       video.play().catch(() => {});
     }
-    applyingRemote = false;
     updateChrome();
     updateSubs();
   }
 
   function burst(emoji) {
+    if (video) session.lastReactT = video.currentTime || 0;
     if (quiet || !reactLayer || !emoji) return;
     const el = document.createElement('div');
     el.className = 'react-float';
@@ -263,6 +285,8 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
 
   function seedSampleChat() {
     if (seededChat) return;
+    seededChat = true;
+    if (chatLog.length) return;
     SAMPLE_CHAT.forEach((msg) =>
       appendChat({
         ...msg,
@@ -270,7 +294,6 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
         at: Date.now(),
       })
     );
-    seededChat = true;
   }
 
   function renderChatLog() {
@@ -339,9 +362,11 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
 
   function setVolume(level) {
     if (!video) return;
-    volumeLevel = Math.min(1, Math.max(0, level));
-    video.volume = volumeLevel;
-    video.muted = volumeLevel === 0;
+    const next = Math.min(1, Math.max(0, level));
+    if (next > 0) lastAudible = next;
+    volumeLevel = next;
+    video.volume = next;
+    video.muted = next === 0;
     syncVolumeUi();
   }
 
@@ -379,38 +404,50 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     updateSubs();
   });
   video?.addEventListener('play', () => {
-    if (!applyingRemote) sendCommand({ paused: false });
+    if (!isRemote()) sendCommand({ paused: false });
     updateChrome();
   });
   video?.addEventListener('pause', () => {
-    if (!applyingRemote) sendCommand({ paused: true });
+    if (!isRemote()) sendCommand({ paused: true });
     updateChrome();
   });
+  video?.addEventListener('ended', () => {
+    if (!isRemote()) sendCommand({ paused: true, t: video.duration || 0 });
+    updateChrome();
+    wakeChrome(true);
+  });
 
-  playBtn?.addEventListener('click', () => {
+  function togglePlay() {
     if (!video) return;
-    if (video.paused) video.play();
+    if (video.paused) video.play().catch(() => {});
     else video.pause();
-  });
-  backBtn?.addEventListener('click', () => {
+  }
+
+  function skip(delta) {
     if (!video) return;
-    video.currentTime = Math.max(0, video.currentTime - 10);
+    const next = Math.max(0, Math.min(video.duration || 0, video.currentTime + delta));
+    if (delta < 0 && next < video.currentTime - 0.4) session.rewindCount += 1;
+    video.currentTime = next;
     sendCommand({ t: video.currentTime, paused: video.paused });
-  });
-  fwdBtn?.addEventListener('click', () => {
-    if (!video) return;
-    video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
-    sendCommand({ t: video.currentTime, paused: video.paused });
-  });
+  }
+
+  function toggleFullscreen() {
+    const el = root.querySelector('.player') || root;
+    if (!document.fullscreenElement) el.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+
+  playBtn?.addEventListener('click', togglePlay);
+  backBtn?.addEventListener('click', () => skip(-10));
+  fwdBtn?.addEventListener('click', () => skip(10));
 
   volumeBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!video) return;
     if (video.muted || video.volume === 0) {
       video.muted = false;
-      setVolume(volumeLevel > 0 ? volumeLevel : 1);
+      setVolume(lastAudible || 1);
     } else {
-      volumeLevel = video.volume || volumeLevel;
       setVolume(0);
     }
   });
@@ -456,20 +493,85 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     speedIdx = (speedIdx + 1) % speeds.length;
     video.playbackRate = speeds[speedIdx];
     speedBtn.title = `Speed ${speeds[speedIdx]}x`;
+    sendCommand({ rate: video.playbackRate, paused: video.paused });
   });
 
-  fullscreenBtn?.addEventListener('click', () => {
-    const el = root.querySelector('.player') || root;
-    if (!document.fullscreenElement) el.requestFullscreen?.();
-    else document.exitFullscreen?.();
+  fullscreenBtn?.addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', () => {
+    const icon = fullscreenBtn?.querySelector('.material-symbols-outlined');
+    if (icon) icon.textContent = document.fullscreenElement ? 'fullscreen_exit' : 'fullscreen';
   });
 
-  progress?.addEventListener('click', (e) => {
-    if (!video?.duration) return;
+  let scrubbing = false;
+  function seekFromEvent(e) {
+    if (!video?.duration || !progress) return;
     const rect = progress.getBoundingClientRect();
-    const pct = (e.clientX - rect.left) / rect.width;
-    video.currentTime = pct * video.duration;
+    const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    const next = pct * video.duration;
+    if (next < video.currentTime - 0.8) session.rewindCount += 1;
+    video.currentTime = next;
+    updateChrome();
+  }
+  progress?.addEventListener('pointerdown', (e) => {
+    if (!video?.duration) return;
+    scrubbing = true;
+    progress.setPointerCapture?.(e.pointerId);
+    seekFromEvent(e);
+  });
+  progress?.addEventListener('pointermove', (e) => {
+    if (scrubbing) seekFromEvent(e);
+  });
+  progress?.addEventListener('pointerup', (e) => {
+    if (!scrubbing) return;
+    scrubbing = false;
+    seekFromEvent(e);
     sendCommand({ t: video.currentTime, paused: video.paused });
+  });
+  progress?.addEventListener('pointercancel', () => {
+    if (!scrubbing) return;
+    scrubbing = false;
+    sendCommand({ t: video.currentTime, paused: video.paused });
+  });
+
+  let videoClickTimer = null;
+  video?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (videoClickTimer) {
+      clearTimeout(videoClickTimer);
+      videoClickTimer = null;
+      toggleFullscreen();
+      return;
+    }
+    videoClickTimer = setTimeout(() => {
+      videoClickTimer = null;
+      togglePlay();
+    }, 220);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!root.classList.contains('is-on')) return;
+    if (e.target.closest('input, textarea')) return;
+    if (e.code === 'Space' || e.key === 'k' || e.key === 'K') {
+      e.preventDefault();
+      togglePlay();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      skip(-10);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      skip(10);
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      toggleFullscreen();
+    } else if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      volumeBtn?.click();
+    } else if (e.key === 'c' || e.key === 'C') {
+      e.preventDefault();
+      setCc(!ccOn);
+    } else if (e.key === 'Escape' && chatOpen) {
+      setChatOpen(false);
+    }
   });
 
   quietBtn?.addEventListener('click', () => {
@@ -493,7 +595,7 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     video?.pause();
     setMic(false);
     setChatOpen(false);
-    onEnd?.();
+    onEnd?.({ ...session });
   });
 
   backBtnNav?.addEventListener('click', () => {
@@ -518,13 +620,21 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     appendChat,
     prepare(party) {
       renderMeta(party);
+      session = { lastReactT: null, rewindCount: 0 };
       const t = titleOf(party);
-      loadTitleVideo(t, party?.playback?.t || 0, party?.playback?.paused !== false);
+      loadTitleVideo(
+        t,
+        party?.playback?.t || 0,
+        party?.playback?.paused !== false,
+        party?.playback?.rate || 1
+      );
       updateChrome();
       seededChat = false;
       chatLog.length = 0;
       seenChatIds.clear();
       if (chatMessages) chatMessages.innerHTML = '';
+      (party?.chat || []).forEach((msg) => appendChat(msg));
+      if (party?.chat?.length) seededChat = true;
       if (quietBtn) {
         quiet = true;
         quietBtn.classList.add('on');
@@ -534,7 +644,6 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
       setChatOpen(false);
       setCc(false);
       setMic(false);
-      setVolume(1);
       wakeChrome();
     },
   };

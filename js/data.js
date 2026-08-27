@@ -80,10 +80,25 @@ export const FALLBACK_TITLES = [
 
 export const SAMPLE_VIDEO = '/media/clips/emily.mp4';
 
+export const NIGHT_NAMES = {
+  Comfort: 'Friday Comfort Night',
+  Thrills: 'Friday Spy Night',
+  Romance: 'Friday Romance Night',
+  Comedy: 'Friday Comedy Night',
+  Drama: 'Friday Drama Night',
+  Action: 'Friday Action Night',
+  'Feel-good': 'Feel-good Friday',
+  'New this week': 'New This Week',
+};
+
+export function nightNameFor(vibe) {
+  return NIGHT_NAMES[vibe] || 'Friday Night';
+}
+
 export const SAMPLE_CHAT = [
-  { name: 'Abha', text: 'wait did he just—', memberId: 'sample-abha' },
-  { name: 'Meera', text: 'shh this is the scene', memberId: 'sample-meera' },
-  { name: 'Rohit', text: 'rewind energy', memberId: 'sample-rohit' },
+  { name: 'Shreya', text: 'this is the scene', memberId: 'sample-shreya' },
+  { name: 'Rohit', text: 'wait — rewind that', memberId: 'sample-rohit' },
+  { name: 'Lakshya', text: 'Quiet on for this bit', memberId: 'sample-lakshya' },
 ];
 
 export function formatTime(sec) {

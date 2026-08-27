@@ -10,6 +10,7 @@ const {
   leaveRoom,
   setInvited,
   recordSwipe,
+  undoSwipe,
   setPhase,
   applyPlayback,
   getPlaybackNow,
@@ -54,6 +55,10 @@ io.on('connection', (socket) => {
       friends: payload.friends || [],
     });
     if (payload.invited?.length) setInvited(room, payload.invited);
+    if (joinedCode && joinedCode !== room.code) {
+      socket.leave(joinedCode);
+      leaveRoom(joinedCode, memberId);
+    }
     joinedCode = room.code;
     socket.join(room.code);
     scheduleBotSwipes(room, io, emitState);
@@ -75,6 +80,10 @@ io.on('connection', (socket) => {
       return;
     }
     const room = result.room;
+    if (joinedCode && joinedCode !== room.code) {
+      socket.leave(joinedCode);
+      leaveRoom(joinedCode, memberId);
+    }
     joinedCode = room.code;
     socket.join(room.code);
     emitState(room);
@@ -110,34 +119,45 @@ io.on('connection', (socket) => {
     const { titleId, action } = payload;
     if (!titleId || !['match', 'pass', 'later'].includes(action)) return;
     const result = recordSwipe(room, mid, titleId, action);
+    const mem = room.members.find((m) => m.id === mid);
+    const state = publicState(room);
     io.to(room.code).emit('swipe:update', {
       memberId: mid,
+      memberName: mem?.name,
       titleId,
       action,
-      state: publicState(room),
+      state,
     });
     if (result.isNewMatch) {
       io.to(room.code).emit('match:added', {
         titleId,
         count: result.count,
-        state: publicState(room),
+        state,
       });
     }
-    emitState(room);
+  });
+
+  socket.on('swipe:undo', (payload = {}) => {
+    const room = getRoom(joinedCode || payload.code);
+    if (!room || room.phase !== 'match') return;
+    const mid = payload.memberId || memberId || socket.id;
+    const result = undoSwipe(room, mid, payload.titleId);
+    if (!result.ok) return;
+    const mem = room.members.find((m) => m.id === mid);
+    io.to(room.code).emit('swipe:update', {
+      memberId: mid,
+      memberName: mem?.name,
+      titleId: result.titleId,
+      action: 'undo',
+      state: publicState(room),
+    });
   });
 
   socket.on('player:command', (payload = {}) => {
     const room = getRoom(joinedCode || payload.code);
     if (!room) return;
-    const pb = applyPlayback(room, payload);
+    applyPlayback(room, payload);
     io.to(room.code).emit('player:sync', getPlaybackNow(room));
-    // keep state playback in sync for late joiners
-    room.playback = {
-      titleId: pb.titleId,
-      t: pb.t,
-      paused: pb.paused,
-      updatedAt: Date.now(),
-    };
   });
 
   socket.on('react:send', (payload = {}) => {
@@ -191,7 +211,6 @@ io.on('connection', (socket) => {
       ratings: room.ratings,
       state: publicState(room),
     });
-    emitState(room);
   });
 
   socket.on('disconnect', () => {

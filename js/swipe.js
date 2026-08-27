@@ -1,10 +1,19 @@
-import { formatTime, memberInitial } from './data.js';
+import { memberInitial } from './data.js';
 
 const ACTION_LABEL = {
   match: 'matched',
   pass: 'passed',
   later: 'saved',
+  undo: 'undid',
 };
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
   const deckEl = root.querySelector('[data-deck]');
@@ -15,10 +24,12 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
   const leftEl = root.querySelector('[data-left]');
   const undoBtn = root.querySelector('[data-undo]');
 
-  let localIndex = 0;
   let history = [];
   let drag = null;
+  let busy = false;
   let shownTitleId = null;
+  let lastMatchId = null;
+  let statusClearTimer = null;
   let feedEl = root.querySelector('[data-swipe-feed]');
   if (!feedEl) {
     feedEl = document.createElement('div');
@@ -34,7 +45,7 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
 
   function currentTitle(party) {
     const rem = remainingDeck(party);
-    const id = rem[localIndex] || rem[0];
+    const id = rem[0];
     return id ? titlesById.get(id) : null;
   }
 
@@ -52,6 +63,7 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
   function renderStatus(party) {
     if (!statusEl || !party) return;
     statusEl.innerHTML = party.members
+      .filter((m) => m.status !== 'invited')
       .map((m) => {
         const you = m.id === client.member.id ? '(you) ' : '';
         const label = statusLabel(m);
@@ -65,13 +77,22 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
             : m.status === 'swiping'
               ? 'dot busy'
               : 'dot';
-        return `<div class="pill ${fresh}" data-member="${m.id}">
-          <span class="avatar sm" style="background:${m.color}">${memberInitial(m.name)}</span>
-          <span class="pill-text">${you}${m.name} · ${label}</span>
+        return `<div class="pill ${fresh}" data-member="${esc(m.id)}">
+          <span class="avatar sm" style="background:${esc(m.color)}">${esc(memberInitial(m.name))}</span>
+          <span class="pill-text">${you}${esc(m.name)} · ${esc(label)}</span>
           <span class="${dot}"></span>
         </div>`;
       })
       .join('');
+    clearTimeout(statusClearTimer);
+    const hasFresh = party.members.some(
+      (m) => m.lastAction && Date.now() - m.lastAction.at < 3500
+    );
+    if (hasFresh) {
+      statusClearTimer = setTimeout(() => {
+        if (client.party) renderStatus(client.party);
+      }, 3600);
+    }
   }
 
   function renderRail(party) {
@@ -80,13 +101,14 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
       .map((m) => {
         const t = titlesById.get(m.titleId);
         if (!t) return '';
-        return `<div class="hit" data-start="${t.id}">
-          <div class="thumb ${t.art}"></div>
+        const isNew = m.titleId === lastMatchId ? ' is-new' : '';
+        return `<button type="button" class="hit${isNew}" data-start="${esc(t.id)}">
+          <div class="thumb ${esc(t.art)}"></div>
           <div>
-            <p>${t.title}</p>
+            <p>${esc(t.title)}</p>
             <span>${m.count} of ${m.memberCount} members</span>
           </div>
-        </div>`;
+        </button>`;
       })
       .join('');
 
@@ -99,7 +121,7 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     railEl.innerHTML = `
       <h4>Matched Tonight</h4>
       <div class="rail-hits">${hits || '<p class="rail-empty">Swipe hearts together — two matches land here. Agree in under a minute.</p>'}</div>
-      <button class="btn btn-red start-bar" data-start-top ${topTitle ? '' : 'disabled'}>${startLabel}</button>
+      <button type="button" class="btn btn-red start-bar" data-start-top ${topTitle ? '' : 'disabled'}>${esc(startLabel)}</button>
     `;
 
     railEl.querySelectorAll('[data-start]').forEach((el) => {
@@ -144,31 +166,33 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     const next = rem[1] ? titlesById.get(rem[1]) : null;
     const next2 = rem[2] ? titlesById.get(rem[2]) : null;
 
+    if (leftEl) leftEl.textContent = `${rem.length} left`;
+    if (nightEl && party) nightEl.textContent = party.nightName;
+    actionsEl?.classList.toggle('is-disabled', !title);
+    if (undoBtn) undoBtn.disabled = !history.length;
+
     if (!title) {
       shownTitleId = null;
       deckEl.innerHTML = `<div class="deck-empty"><h3>Deck clear</h3><p>Check Matched Tonight — or wait for friends.</p></div>`;
       return;
     }
 
-    if (leftEl) leftEl.textContent = `${rem.length} left`;
-    if (nightEl && party) nightEl.textContent = party.nightName;
-
-    if (drag || (shownTitleId === title.id && deckEl.querySelector('[data-front]'))) {
+    if (busy || drag || (shownTitleId === title.id && deckEl.querySelector('[data-front]'))) {
       return;
     }
 
     shownTitleId = title.id;
     deckEl.innerHTML = `
-      ${next2 ? `<div class="card back"><div class="art ${next2.art}"></div></div>` : ''}
-      ${next ? `<div class="card mid"><div class="art ${next.art}"></div></div>` : ''}
+      ${next2 ? `<div class="card back"><div class="art ${esc(next2.art)}"></div></div>` : ''}
+      ${next ? `<div class="card mid"><div class="art ${esc(next.art)}"></div></div>` : ''}
       <div class="card front" data-front>
-        <div class="art ${title.art}"></div>
+        <div class="art ${esc(title.art)}"></div>
         <div class="stamp later hint" data-stamp="later">LATER</div>
         <div class="stamp pass hint" data-stamp="pass">PASS</div>
         <div class="stamp match hint" data-stamp="match">MATCH</div>
         <div class="meta">
-          <h3>${title.title}</h3>
-          <div class="row"><span class="maturity">${title.maturity}</span> ${title.runtime} · ${title.genre}</div>
+          <h3>${esc(title.title)}</h3>
+          <div class="row"><span class="maturity">${esc(title.maturity)}</span> ${esc(title.runtime)} · ${esc(title.genre)}</div>
         </div>
       </div>
     `;
@@ -180,6 +204,7 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
   function bindDrag(front, titleId) {
     if (!front) return;
     const onDown = (e) => {
+      if (busy) return;
       if (e.button != null && e.button !== 0) return;
       front.setPointerCapture?.(e.pointerId);
       drag = { titleId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0 };
@@ -210,26 +235,39 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     front.addEventListener('pointermove', onMove);
     front.addEventListener('pointerup', onUp);
     front.addEventListener('pointercancel', onUp);
+    front.addEventListener('lostpointercapture', onUp);
   }
 
   function commit(titleId, action, front, tx = 0, ty = 0) {
+    if (busy || !titleId) return;
+    busy = true;
     history.push({ titleId, action });
+    if (undoBtn) undoBtn.disabled = false;
     if (front) {
       front.style.transform = `translate(${tx}px, ${ty || -40}px) rotate(${tx / 20}deg)`;
       front.style.opacity = '0';
     }
     client.swipe(titleId, action);
-    setTimeout(() => render(client.party), 220);
+    setTimeout(() => {
+      busy = false;
+      shownTitleId = null;
+      render(client.party);
+    }, 240);
   }
 
   function noteFriendSwipe(payload) {
     if (!payload || payload.memberId === client.member.id) return;
+    if (payload.action === 'undo') {
+      renderStatus(payload.state || client.party);
+      renderRail(payload.state || client.party);
+      return;
+    }
     const name = payload.memberName || 'Friend';
     const title = titlesById.get(payload.titleId);
     const verb = ACTION_LABEL[payload.action] || payload.action;
     const chip = document.createElement('div');
     chip.className = `friend-swipe-chip ${payload.action || ''}`;
-    chip.innerHTML = `<strong>${name}</strong> ${verb}${title ? ` · ${title.title}` : ''}`;
+    chip.innerHTML = `<strong>${esc(name)}</strong> ${esc(verb)}${title ? ` · ${esc(title.title)}` : ''}`;
     feedEl.appendChild(chip);
     requestAnimationFrame(() => chip.classList.add('in'));
     setTimeout(() => {
@@ -237,7 +275,6 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
       setTimeout(() => chip.remove(), 320);
     }, 2200);
 
-    // Ghost stamp flies off the deck so it feels like they're swiping too
     const ghost = document.createElement('div');
     ghost.className = `ghost-stamp ${payload.action || 'match'}`;
     ghost.textContent = (payload.action || 'match').toUpperCase();
@@ -259,9 +296,19 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     renderCard(party);
   }
 
+  function reset() {
+    history = [];
+    drag = null;
+    busy = false;
+    shownTitleId = null;
+    lastMatchId = null;
+    feedEl.innerHTML = '';
+    if (undoBtn) undoBtn.disabled = true;
+  }
+
   actionsEl?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]');
-    if (!btn) return;
+    if (!btn || busy) return;
     const party = client.party;
     const title = currentTitle(party);
     if (!title) return;
@@ -273,14 +320,55 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
   });
 
   undoBtn?.addEventListener('click', () => {
-    if (!history.length) return;
-    history.pop();
+    if (!history.length || busy) return;
+    const last = history.pop();
+    const votes = client.party?.votes?.[last.titleId];
+    if (votes) delete votes[client.member.id];
+    client.undo(last.titleId);
+    shownTitleId = null;
+    if (undoBtn) undoBtn.disabled = !history.length;
     render(client.party);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!root.classList.contains('is-on')) return;
+    if (e.target.closest('input, textarea')) return;
+    if (e.key === 'ArrowRight' || e.key === 'Enter') {
+      e.preventDefault();
+      actionsEl?.querySelector('[data-action="match"]')?.click();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      actionsEl?.querySelector('[data-action="pass"]')?.click();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      actionsEl?.querySelector('[data-action="later"]')?.click();
+    } else if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      undoBtn?.click();
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      undoBtn?.click();
+    }
   });
 
   return {
     render,
     noteFriendSwipe,
-    formatTime,
+    reset,
+    celebrate(titleId) {
+      lastMatchId = titleId;
+      const title = titlesById.get(titleId);
+      if (title && feedEl) {
+        const chip = document.createElement('div');
+        chip.className = 'friend-swipe-chip match';
+        chip.innerHTML = `<strong>It's a match</strong> · ${esc(title.title)}`;
+        feedEl.appendChild(chip);
+        requestAnimationFrame(() => chip.classList.add('in'));
+        setTimeout(() => {
+          chip.classList.add('out');
+          setTimeout(() => chip.remove(), 320);
+        }, 2400);
+      }
+    },
   };
 }
