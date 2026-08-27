@@ -1,6 +1,4 @@
-import { SAMPLE_VIDEO, SAMPLE_CHAT, formatTime, memberInitial, videoForTitle } from './data.js';
-
-export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
+function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
   const video = root.querySelector('video');
   const syncEl = root.querySelector('[data-sync]');
   const quietBtn = root.querySelector('[data-quiet]');
@@ -59,7 +57,7 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
   let loadGen = 0;
 
   if (video) {
-    video.src = SAMPLE_VIDEO;
+    video.src = resolveMedia(SAMPLE_VIDEO);
     video.playsInline = true;
     video.volume = volumeLevel;
   }
@@ -91,10 +89,9 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
   function loadTitleVideo(title, seekTo = 0, paused = true, rate = 1) {
     if (!video || !title) return;
     const gen = ++loadGen;
-    const src = videoForTitle(title);
-    const abs = new URL(src, location.origin).href;
+    const src = resolveMedia(videoForTitle(title));
     const currentAbs = video.src || '';
-    if (currentAbs !== abs) {
+    if (currentAbs !== src) {
       video.src = src;
       video.load();
     }
@@ -153,7 +150,7 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
 
   async function loadCues() {
     try {
-      const res = await fetch('/media/sample-en.vtt');
+      const res = await fetch(resolveMedia('media/sample-en.vtt'));
       if (!res.ok) return;
       cues = parseVtt(await res.text());
     } catch (_) {
@@ -230,9 +227,8 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     if (!video || !playback) return;
     const t = playback.titleId ? titlesById.get(playback.titleId) : null;
     if (t) {
-      const src = videoForTitle(t);
-      const abs = new URL(src, location.origin).href;
-      if ((video.src || '') !== abs || video.readyState < 1) {
+      const src = resolveMedia(videoForTitle(t));
+      if ((video.src || '') !== src || video.readyState < 1) {
         loadTitleVideo(t, playback.t || 0, playback.paused !== false, playback.rate || 1);
         return;
       }

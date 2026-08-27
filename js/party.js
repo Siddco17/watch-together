@@ -1,5 +1,3 @@
-import { FRIENDS } from './data.js';
-
 const MEMBER_KEY = 'wt_member';
 const PARTY_KEY = 'wt_party';
 
@@ -18,7 +16,7 @@ function savedCode() {
   }
 }
 
-export function normalizeCode(raw) {
+function normalizeCode(raw) {
   let s = String(raw || '')
     .trim()
     .toUpperCase()
@@ -53,9 +51,176 @@ function ensureMember() {
   return m;
 }
 
-export function createPartyClient() {
+function createLocalTransport() {
+  const handlers = {};
+  let joinedCode = null;
+  let memberId = null;
+
+  function on(event, fn) {
+    (handlers[event] = handlers[event] || []).push(fn);
+  }
+
+  function emitClient(event, payload) {
+    (handlers[event] || []).forEach((fn) => fn(payload));
+  }
+
+  function once(event, fn) {
+    const wrap = (payload) => {
+      handlers[event] = (handlers[event] || []).filter((f) => f !== wrap);
+      fn(payload);
+    };
+    on(event, wrap);
+  }
+
+  function emit(event, payload, ack) {
+    const p = payload || {};
+    if (event === 'party:create') {
+      memberId = p.id;
+      const room = LocalRoom.createRoom({
+        hostId: p.id,
+        name: p.name || 'You',
+        color: p.color || '#e50914',
+        vibe: p.vibe || 'Comfort',
+        nightName: p.nightName || 'Friday Spy Night',
+        friends: p.friends || [],
+      });
+      if (p.invited?.length) LocalRoom.setInvited(room, p.invited);
+      joinedCode = room.code;
+      LocalRoom.scheduleBotSwipes(room, emitClient);
+      const state = LocalRoom.publicState(room);
+      emitClient('party:state', state);
+      if (typeof ack === 'function') ack({ ok: true, state });
+      return;
+    }
+    if (event === 'party:join') {
+      memberId = p.id;
+      const result = LocalRoom.joinRoom(p.code, {
+        id: p.id,
+        name: p.name,
+        color: p.color,
+      });
+      if (result.error) {
+        if (typeof ack === 'function') ack({ ok: false, error: result.error });
+        return;
+      }
+      joinedCode = result.room.code;
+      const state = LocalRoom.publicState(result.room);
+      emitClient('party:state', state);
+      if (typeof ack === 'function') ack({ ok: true, state });
+      return;
+    }
+    const room = LocalRoom.getRoom(joinedCode || p.code);
+    if (!room) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Party not found' });
+      return;
+    }
+    if (event === 'party:phase') {
+      LocalRoom.setPhase(room, p.phase, p);
+      const state = LocalRoom.publicState(room);
+      emitClient('party:state', state);
+      if (p.phase === 'watch') emitClient('player:sync', LocalRoom.getPlaybackNow(room));
+      if (typeof ack === 'function') ack({ ok: true, state });
+      return;
+    }
+    if (event === 'swipe:action') {
+      if (room.phase !== 'match') return;
+      const mid = p.memberId || memberId;
+      const result = LocalRoom.recordSwipe(room, mid, p.titleId, p.action);
+      const mem = room.members.find((m) => m.id === mid);
+      const state = LocalRoom.publicState(room);
+      emitClient('swipe:update', {
+        memberId: mid,
+        memberName: mem?.name,
+        titleId: p.titleId,
+        action: p.action,
+        state,
+      });
+      if (result.isNewMatch) {
+        emitClient('match:added', { titleId: p.titleId, count: result.count, state });
+      }
+      return;
+    }
+    if (event === 'swipe:undo') {
+      if (room.phase !== 'match') return;
+      const mid = p.memberId || memberId;
+      const result = LocalRoom.undoSwipe(room, mid, p.titleId);
+      if (!result.ok) return;
+      const mem = room.members.find((m) => m.id === mid);
+      emitClient('swipe:update', {
+        memberId: mid,
+        memberName: mem?.name,
+        titleId: result.titleId,
+        action: 'undo',
+        state: LocalRoom.publicState(room),
+      });
+      return;
+    }
+    if (event === 'player:command') {
+      LocalRoom.applyPlayback(room, p);
+      emitClient('player:sync', LocalRoom.getPlaybackNow(room));
+      return;
+    }
+    if (event === 'react:send') {
+      emitClient('react:burst', {
+        emoji: p.emoji || '🔥',
+        memberId: p.memberId || memberId,
+        name: p.name,
+        at: Date.now(),
+      });
+      return;
+    }
+    if (event === 'chat:send') {
+      const text = String(p.text || '').trim().slice(0, 280);
+      if (!text) return;
+      const msg = {
+        id: p.localId || `local-${Date.now()}`,
+        text,
+        memberId: p.memberId || memberId,
+        name: p.name || 'Guest',
+        at: Date.now(),
+      };
+      if (!room.chat) room.chat = [];
+      room.chat.push(msg);
+      emitClient('chat:message', msg);
+      return;
+    }
+    if (event === 'mic:state') {
+      const mid = p.memberId || memberId;
+      const m = room.members.find((x) => x.id === mid);
+      if (m) m.micOn = !!p.on;
+      emitClient('mic:update', { memberId: mid, on: !!p.on, name: m?.name });
+      return;
+    }
+    if (event === 'rate:cast') {
+      const mid = p.memberId || memberId;
+      LocalRoom.setRating(room, mid, p.stars);
+      emitClient('rate:update', {
+        ratings: room.ratings,
+        state: LocalRoom.publicState(room),
+      });
+    }
+  }
+
+  queueMicrotask(() => emitClient('connect'));
+
+  return {
+    connected: true,
+    on,
+    once,
+    emit,
+  };
+}
+
+function createTransport() {
+  if (location.protocol === 'file:' || typeof io !== 'function') {
+    return createLocalTransport();
+  }
+  return io();
+}
+
+function createPartyClient() {
   const member = ensureMember();
-  const socket = io();
+  const socket = createTransport();
 
   const state = {
     member,

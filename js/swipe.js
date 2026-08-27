@@ -1,5 +1,3 @@
-import { memberInitial } from './data.js';
-
 const ACTION_LABEL = {
   match: 'matched',
   pass: 'passed',
@@ -15,7 +13,7 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
-export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
+function createSwipeUI({ root, client, titlesById, onStartWatch }) {
   const deckEl = root.querySelector('[data-deck]');
   const actionsEl = root.querySelector('[data-actions]');
   const railEl = root.querySelector('[data-rail]');
