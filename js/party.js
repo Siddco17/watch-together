@@ -184,20 +184,20 @@ export function createPartyClient() {
     },
     toggleInvite(friendId) {
       const friend = FRIENDS.find((f) => f.id === friendId);
-      // Online friends stay Added — only offline can toggle Invite / Invited
-      if (friend?.online) return;
+      if (friend?.status === 'active' || friend?.status === 'watching') return;
       if (state.invited.has(friendId)) state.invited.delete(friendId);
       else state.invited.add(friendId);
       notify('invites');
     },
     seedOnlineFriends() {
-      FRIENDS.filter((f) => f.online).forEach((f) => state.invited.add(f.id));
+      FRIENDS.filter((f) => f.status === 'active').forEach((f) => state.invited.add(f.id));
       notify('invites');
     },
     getPartyFriends() {
       return FRIENDS.filter((f) => state.invited.has(f.id)).map((f) => ({
         ...f,
-        role: f.online ? 'added' : 'invited',
+        online: f.status === 'active',
+        role: f.status === 'active' ? 'added' : 'invited',
       }));
     },
     async createParty({ nightName } = {}) {

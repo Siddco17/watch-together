@@ -1,11 +1,11 @@
 export const FRIENDS = [
-  { id: 'abha', name: 'Abha', color: '#e91e8c', online: false },
-  { id: 'meera', name: 'Meera', color: '#6b6b6b', online: false },
-  { id: 'shreya', name: 'Shreya', color: '#2458b5', online: true },
-  { id: 'devashree', name: 'Devashree', color: '#8c47b3', online: false },
-  { id: 'kartiki', name: 'Kartiki', color: '#e50914', online: false },
-  { id: 'rohit', name: 'Rohit', color: '#1e8c52', online: true },
-  { id: 'lakshya', name: 'Lakshya', color: '#c47a12', online: true },
+  { id: 'abha', name: 'Abha', color: '#e91e8c', status: 'offline' },
+  { id: 'meera', name: 'Meera', color: '#4a5568', status: 'watching' },
+  { id: 'shreya', name: 'Shreya', color: '#2458b5', status: 'active' },
+  { id: 'devashree', name: 'Devashree', color: '#8c47b3', status: 'offline' },
+  { id: 'kartiki', name: 'Kartiki', color: '#e50914', status: 'watching' },
+  { id: 'rohit', name: 'Rohit', color: '#1e8c52', status: 'active' },
+  { id: 'lakshya', name: 'Lakshya', color: '#c47a12', status: 'offline' },
 ];
 
 export const VIBES = [

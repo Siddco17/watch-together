@@ -111,22 +111,30 @@ function renderFriends() {
   if (!list) return;
   list.innerHTML = FRIENDS.map((f) => {
     const selected = client.invited.has(f.id);
-    if (f.online) {
-      return `<div class="friend-row">
-        <span class="avatar" style="background:${f.color}">
+    const status = f.status || (f.online ? 'active' : 'offline');
+    const dot =
+      status === 'active' ? 'on' : status === 'watching' ? 'watch' : 'off';
+    const title =
+      status === 'active' ? 'Online' : status === 'watching' ? 'Watching' : 'Offline';
+    const avatar = `<span class="avatar" style="background:${f.color}">
           ${memberInitial(f.name)}
-          <i class="status-dot on"></i>
+          <i class="status-dot ${dot}" title="${title}"></i>
         </span>
-        <span class="friend-name">${f.name}</span>
+        <span class="friend-name">${f.name}</span>`;
+    if (status === 'active') {
+      return `<div class="friend-row">
+        ${avatar}
         <button type="button" class="btn-add added" disabled data-friend="${f.id}">Added</button>
       </div>`;
     }
+    if (status === 'watching') {
+      return `<div class="friend-row">
+        ${avatar}
+        <button type="button" class="btn-add busy" disabled>Busy</button>
+      </div>`;
+    }
     return `<div class="friend-row">
-      <span class="avatar" style="background:${f.color}">
-        ${memberInitial(f.name)}
-        <i class="status-dot off"></i>
-      </span>
-      <span class="friend-name">${f.name}</span>
+      ${avatar}
       <button type="button" class="btn-add ${selected ? 'invited' : 'invite'}" data-friend="${f.id}">
         ${selected ? 'Invited' : 'Invite'}
       </button>
@@ -379,12 +387,12 @@ document.querySelector('[data-profiles]')?.addEventListener('click', (e) => {
     return;
   }
   if (id === 'sarah') {
-    client.setProfileName('Sarah', '#e50914');
-    setNavProfile('Sarah', '#e50914');
+    client.setProfileName('Sarah', '#3b82f6');
+    setNavProfile('Sarah', '#3b82f6');
   }
   if (id === 'caleb') {
-    client.setProfileName('Caleb', '#c9a227');
-    setNavProfile('Caleb', '#c9a227');
+    client.setProfileName('Caleb', '#f5c518');
+    setNavProfile('Caleb', '#f5c518');
   }
   if (id === 'children') {
     client.setProfileName('Children', '#7b2ff7');
