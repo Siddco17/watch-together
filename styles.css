@@ -420,6 +420,7 @@ input:focus-visible {
   border-radius: 50%;
   border: 2px solid #141414;
   box-shadow: 0 0 0 1px rgba(255,255,255,.18);
+  z-index: 1;
 }
 .status-dot.on { background: #46d369; }
 .status-dot.watch { background: #e50914; }
