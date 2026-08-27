@@ -57,5 +57,5 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Local media
 
 Posters live in `media/posters/` (Enola Holmes, Always Be My Maybe, The Adam Project, Red Notice, Raazi, Voicemails).  
-Clips in `media/clips/` (Raazi, Voicemails) plus short preview bumpers in `media/previews/` until the Netflix scene clips are added.  
+Clips in `media/clips/` (Enola Holmes, Always Be My Maybe, The Adam Project, Red Notice, Raazi, Voicemails).  
 MP4s in `media/clips/` are stored with **Git LFS** — after cloning, run `git lfs pull` if the videos are missing.
