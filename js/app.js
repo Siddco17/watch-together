@@ -80,7 +80,7 @@ function enterPhase(party) {
 
 async function loadTitles() {
   try {
-    const res = await fetch('/api/titles');
+    const res = await fetch('api/titles');
     if (res.ok) {
       const remote = await res.json();
       const localById = new Map(FALLBACK_TITLES.map((t) => [t.id, t]));
@@ -94,8 +94,8 @@ async function loadTitles() {
             ...t,
             title: local?.title || t.title,
             runtime: local?.runtime || t.runtime,
-            poster: t.poster || local?.poster,
-            video: t.video || local?.video,
+            poster: String(t.poster || local?.poster || '').replace(/^\//, ''),
+            video: String(t.video || local?.video || '').replace(/^\//, ''),
             art: local?.art || t.art,
           };
         })

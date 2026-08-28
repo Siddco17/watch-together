@@ -6,6 +6,18 @@ Vanilla HTML/CSS/JS frontend + **Express + Socket.io** backend (in-memory party 
 
 **Finale thesis:** *Tonight is a match, not a debate.* Full pitch, timed demo, and Q&A: see **[PITCH.md](PITCH.md)**.
 
+## Live demo
+
+**Judges — open this and play:** [https://siddco17.github.io/watch-together/](https://siddco17.github.io/watch-together/)
+
+No install. In the browser:
+
+1. **Watch Party** → pick a **Party mood** → **Start Party**
+2. Swipe pass / later / match
+3. **Start with…** → reactions, Quiet, **End night**
+
+The hosted demo runs fully in the browser (bots still fill Matched Tonight). Two-device sync still needs `npm start` on a laptop.
+
 ## On another laptop
 
 ```bash

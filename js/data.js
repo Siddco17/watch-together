@@ -37,8 +37,8 @@ export const FALLBACK_TITLES = [
     year: 2020,
     vibes: ['Comfort', 'Thrills', 'Drama', 'Feel-good'],
     art: 'art-enola',
-    poster: '/media/posters/enola.jpg',
-    video: '/media/clips/enola.mp4',
+    poster: 'media/posters/enola.jpg',
+    video: 'media/clips/enola.mp4',
   },
   {
     id: 'maybe',
@@ -49,8 +49,8 @@ export const FALLBACK_TITLES = [
     year: 2019,
     vibes: ['Comfort', 'Romance', 'Comedy', 'Feel-good'],
     art: 'art-maybe',
-    poster: '/media/posters/maybe.jpg',
-    video: '/media/clips/maybe.mp4',
+    poster: 'media/posters/maybe.jpg',
+    video: 'media/clips/maybe.mp4',
   },
   {
     id: 'raazi',
@@ -61,8 +61,8 @@ export const FALLBACK_TITLES = [
     year: 2018,
     vibes: ['Thrills', 'Action', 'Drama'],
     art: 'art-raazi',
-    poster: '/media/posters/raazi.jpg',
-    video: '/media/clips/raazi.mp4',
+    poster: 'media/posters/raazi.jpg',
+    video: 'media/clips/raazi.mp4',
   },
   {
     id: 'adam',
@@ -73,8 +73,8 @@ export const FALLBACK_TITLES = [
     year: 2022,
     vibes: ['Comedy', 'Action', 'Feel-good', 'New this week'],
     art: 'art-adam',
-    poster: '/media/posters/adam.jpg',
-    video: '/media/clips/adam.mp4',
+    poster: 'media/posters/adam.jpg',
+    video: 'media/clips/adam.mp4',
   },
   {
     id: 'rednotice',
@@ -85,8 +85,8 @@ export const FALLBACK_TITLES = [
     year: 2021,
     vibes: ['Thrills', 'Action', 'Comedy'],
     art: 'art-rednotice',
-    poster: '/media/posters/rednotice.jpg',
-    video: '/media/clips/rednotice.mp4',
+    poster: 'media/posters/rednotice.jpg',
+    video: 'media/clips/rednotice.mp4',
   },
   {
     id: 'voicemails',
@@ -97,12 +97,12 @@ export const FALLBACK_TITLES = [
     year: 2024,
     vibes: ['Comfort', 'Drama', 'Romance', 'New this week'],
     art: 'art-voicemails',
-    poster: '/media/posters/voicemails.png',
-    video: '/media/clips/voicemails.mp4',
+    poster: 'media/posters/voicemails.png',
+    video: 'media/clips/voicemails.mp4',
   },
 ];
 
-export const SAMPLE_VIDEO = '/media/clips/raazi.mp4';
+export const SAMPLE_VIDEO = 'media/clips/raazi.mp4';
 
 export const NIGHT_NAMES = {
   Comfort: 'Friday Comfort Night',

@@ -1,4 +1,5 @@
 import { FRIENDS } from './data.js';
+import { createLocalSocket } from './local-party.js';
 
 const MEMBER_KEY = 'wt_member';
 const PARTY_KEY = 'wt_party';
@@ -53,9 +54,21 @@ function ensureMember() {
   return m;
 }
 
+async function serverIsUp() {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 800);
+    const res = await fetch('api/health', { cache: 'no-store', signal: ctrl.signal });
+    clearTimeout(t);
+    return res.ok;
+  } catch (_) {
+    return false;
+  }
+}
+
 export function createPartyClient() {
   const member = ensureMember();
-  const socket = io();
+  let socket = null;
 
   const state = {
     member,
@@ -93,61 +106,71 @@ export function createPartyClient() {
     );
   }
 
-  function waitConnected(ms = 4000) {
-    if (state.connected || socket.connected) {
+  function bindSocket(s) {
+    socket = s;
+    s.on('connect', () => {
       state.connected = true;
-      return Promise.resolve(true);
+      notify('connect');
+      rejoinIfNeeded();
+    });
+    s.on('disconnect', () => {
+      state.connected = false;
+      notify('disconnect');
+    });
+    s.on('party:state', (party) => {
+      state.party = party;
+      notify('party:state', party);
+    });
+    s.on('swipe:update', (payload) => {
+      if (payload.state) state.party = payload.state;
+      notify('swipe:update', payload);
+    });
+    s.on('match:added', (payload) => {
+      if (payload.state) state.party = payload.state;
+      notify('match:added', payload);
+    });
+    s.on('player:sync', (playback) => {
+      if (state.party) state.party.playback = playback;
+      notify('player:sync', playback);
+    });
+    s.on('react:burst', (payload) => notify('react:burst', payload));
+    s.on('chat:message', (payload) => notify('chat:message', payload));
+    s.on('mic:update', (payload) => notify('mic:update', payload));
+    s.on('rate:update', (payload) => {
+      if (payload.state) state.party = payload.state;
+      notify('rate:update', payload);
+    });
+    if (s.connected) {
+      state.connected = true;
+      notify('connect');
     }
-    return new Promise((resolve) => {
-      const t = setTimeout(() => resolve(false), ms);
-      socket.once('connect', () => {
-        clearTimeout(t);
-        resolve(true);
+  }
+
+  async function ensureSocket() {
+    if (socket) return socket;
+    if ((await serverIsUp()) && typeof io === 'function') {
+      bindSocket(io());
+    } else {
+      bindSocket(createLocalSocket());
+    }
+    return socket;
+  }
+
+  function waitConnected(ms = 4000) {
+    return ensureSocket().then(() => {
+      if (state.connected || socket?.connected) {
+        state.connected = true;
+        return true;
+      }
+      return new Promise((resolve) => {
+        const t = setTimeout(() => resolve(false), ms);
+        socket.once('connect', () => {
+          clearTimeout(t);
+          resolve(true);
+        });
       });
     });
   }
-
-  socket.on('connect', () => {
-    state.connected = true;
-    notify('connect');
-    rejoinIfNeeded();
-  });
-
-  socket.on('disconnect', () => {
-    state.connected = false;
-    notify('disconnect');
-  });
-
-  socket.on('party:state', (party) => {
-    state.party = party;
-    notify('party:state', party);
-  });
-
-  socket.on('swipe:update', (payload) => {
-    if (payload.state) state.party = payload.state;
-    notify('swipe:update', payload);
-  });
-
-  socket.on('match:added', (payload) => {
-    if (payload.state) state.party = payload.state;
-    notify('match:added', payload);
-  });
-
-  socket.on('player:sync', (playback) => {
-    if (state.party) state.party.playback = playback;
-    notify('player:sync', playback);
-  });
-
-  socket.on('react:burst', (payload) => notify('react:burst', payload));
-
-  socket.on('chat:message', (payload) => notify('chat:message', payload));
-
-  socket.on('mic:update', (payload) => notify('mic:update', payload));
-
-  socket.on('rate:update', (payload) => {
-    if (payload.state) state.party = payload.state;
-    notify('rate:update', payload);
-  });
 
   return {
     get member() {
