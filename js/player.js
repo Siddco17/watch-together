@@ -153,7 +153,7 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
 
   async function loadCues() {
     try {
-      const res = await fetch('/media/sample-en.vtt');
+      const res = await fetch('media/sample-en.vtt');
       if (!res.ok) return;
       cues = parseVtt(await res.text());
     } catch (_) {

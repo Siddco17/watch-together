@@ -1,0 +1,57 @@
+name: Deploy demo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Compress clips over the Pages 100MB limit
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          max=99000000
+          shopt -s nullglob
+          for f in media/clips/*.mp4; do
+            size=$(stat -c%s "$f")
+            if [ "$size" -gt "$max" ]; then
+              echo "Compressing $f ($size bytes)"
+              ffmpeg -y -i "$f" -c:v libx264 -crf 28 -preset veryfast -c:a aac -b:a 96k -movflags +faststart "${f}.web.mp4"
+              mv "${f}.web.mp4" "$f"
+            fi
+          done
+
+      - name: Pack static site
+        run: |
+          mkdir -p site
+          cp index.html styles.css favicon.svg site/
+          cp -r js media site/
+          touch site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
