@@ -148,14 +148,14 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     }
   }
 
-  function showIdleHints() {
+  function hideStamps() {
     const pass = deckEl.querySelector('[data-stamp="pass"]');
     const match = deckEl.querySelector('[data-stamp="match"]');
     const later = deckEl.querySelector('[data-stamp="later"]');
     [pass, match, later].forEach((el) => {
       if (!el) return;
-      el.classList.add('hint');
-      el.style.opacity = '';
+      el.classList.remove('hint');
+      el.style.opacity = '0';
     });
   }
 
@@ -165,7 +165,7 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     const later = deckEl.querySelector('[data-stamp="later"]');
     const idle = Math.abs(dx) < 12 && Math.abs(dy) < 12;
     if (idle) {
-      showIdleHints();
+      hideStamps();
       return;
     }
     [pass, match, later].forEach((el) => el?.classList.remove('hint'));
@@ -202,9 +202,9 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
       ${next ? `<div class="card mid"><div class="art ${esc(next.art)}"></div></div>` : ''}
       <div class="card front" data-front>
         <div class="art ${esc(title.art)}"></div>
-        <div class="stamp later hint" data-stamp="later">LATER</div>
-        <div class="stamp pass hint" data-stamp="pass">PASS</div>
-        <div class="stamp match hint" data-stamp="match">MATCH</div>
+        <div class="stamp later" data-stamp="later">LATER</div>
+        <div class="stamp pass" data-stamp="pass">PASS</div>
+        <div class="stamp match" data-stamp="match">MATCH</div>
         <div class="meta">
           <h3>${esc(title.title)}</h3>
           <div class="row"><span class="maturity">${esc(title.maturity)}</span> ${esc(title.runtime)} · ${esc(title.genre)}</div>
@@ -243,7 +243,7 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
       else if (dy < -100) commit(id, 'later', front, 0, -480);
       else {
         front.style.transform = '';
-        showIdleHints();
+        hideStamps();
       }
     };
     front.addEventListener('pointerdown', onDown);
@@ -284,13 +284,6 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
       `<strong>${esc(name)}</strong> ${esc(verb)}${title ? ` · ${esc(title.title)}` : ''}`,
       payload.action || ''
     );
-
-    const ghost = document.createElement('div');
-    ghost.className = `ghost-stamp ${payload.action || 'match'}`;
-    ghost.textContent = (payload.action || 'match').toUpperCase();
-    deckEl?.appendChild(ghost);
-    requestAnimationFrame(() => ghost.classList.add('fly'));
-    setTimeout(() => ghost.remove(), 700);
 
     const party = payload.state || client.party;
     if (party) {
