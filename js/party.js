@@ -207,13 +207,13 @@ export function createPartyClient() {
     },
     toggleInvite(friendId) {
       const friend = FRIENDS.find((f) => f.id === friendId);
-      if (friend?.status === 'active' || friend?.status === 'watching') return;
+      if (friend?.status === 'watching') return;
       if (state.invited.has(friendId)) state.invited.delete(friendId);
       else state.invited.add(friendId);
       notify('invites');
     },
-    seedOnlineFriends() {
-      FRIENDS.filter((f) => f.status === 'active').forEach((f) => state.invited.add(f.id));
+    clearInvites() {
+      state.invited.clear();
       notify('invites');
     },
     getPartyFriends() {

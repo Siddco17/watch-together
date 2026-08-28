@@ -121,23 +121,26 @@ function renderFriends() {
           <i class="status-dot ${dot}" title="${title}"></i>
         </span>
         <span class="friend-name">${f.name}</span>`;
-    if (status === 'active') {
-      return `<div class="friend-row">
-        ${avatar}
-        <button type="button" class="btn-add added" disabled data-friend="${f.id}">Added</button>
-      </div>`;
-    }
     if (status === 'watching') {
       return `<div class="friend-row">
         ${avatar}
         <button type="button" class="btn-add busy" disabled>Busy</button>
       </div>`;
     }
+    let cls = 'invite';
+    let label = 'Invite';
+    if (selected) {
+      if (status === 'active') {
+        cls = 'joined';
+        label = 'Joined';
+      } else {
+        cls = 'invited';
+        label = 'Invited';
+      }
+    }
     return `<div class="friend-row">
       ${avatar}
-      <button type="button" class="btn-add ${selected ? 'invited' : 'invite'}" data-friend="${f.id}">
-        ${selected ? 'Invited' : 'Invite'}
-      </button>
+      <button type="button" class="btn-add ${cls}" data-friend="${f.id}">${label}</button>
     </div>`;
   }).join('');
 }
@@ -380,7 +383,7 @@ document.querySelector('[data-profiles]')?.addEventListener('click', (e) => {
   if (id === 'watchparty') {
     client.setProfileName('You', '#e91e8c');
     setNavProfile('You', '#e91e8c', 'party');
-    client.seedOnlineFriends();
+    client.clearInvites();
     go('invite');
     renderFriends();
     renderChips();
@@ -535,7 +538,7 @@ document.querySelectorAll('[data-nav-party]').forEach((el) => {
       enterPhase(client.party);
     } else {
       setNavProfile('You', '#e91e8c', 'party');
-      client.seedOnlineFriends();
+      client.clearInvites();
       go('invite');
       renderFriends();
       renderChips();
@@ -578,7 +581,7 @@ function navKindFor(member) {
   }
   const hash = (location.hash || '#profiles').slice(1);
   if (hash === 'invite') {
-    client.seedOnlineFriends();
+    client.clearInvites();
     go('invite');
     renderFriends();
     renderChips();
