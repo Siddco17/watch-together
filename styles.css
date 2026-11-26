@@ -784,6 +784,26 @@ input:focus-visible {
   object-fit: contain;
   background: #000;
 }
+.video-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 32px 24px;
+  text-align: center;
+  background: rgba(0, 0, 0, .82);
+  color: #fff;
+}
+.video-fallback[hidden] { display: none; }
+.video-fallback p { max-width: 420px; line-height: 1.45; }
+.video-fallback .video-fallback-title { font-size: 18px; font-weight: 700; }
+.video-fallback code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: #fff;
+}
 .presence {
   position: absolute;
   top: 20px;
@@ -873,20 +893,20 @@ input:focus-visible {
 
 .couch {
   position: absolute;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
+  left: 24px;
+  bottom: 200px;
   z-index: 6;
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  max-width: calc(100% - 48px);
   padding: 8px 18px 8px 10px;
   border-radius: 999px;
   background: rgba(210, 210, 210, .55);
   box-shadow: 0 10px 28px rgba(0,0,0,.35);
   pointer-events: auto;
   opacity: .45;
-  transition: opacity .25s ease, bottom .25s ease, background .25s ease;
+  transition: opacity .25s ease, background .25s ease;
 }
 .couch .avatar-row .avatar {
   width: 28px;
@@ -952,7 +972,15 @@ input:focus-visible {
 .player.is-awake .react-bar { background: rgba(20,20,20,.75); }
 .player.is-awake .couch {
   background: rgba(210, 210, 210, .92);
-  bottom: 118px;
+}
+@media (max-width: 700px) {
+  .couch,
+  .player.is-awake .couch {
+    top: 176px;
+    bottom: auto;
+    left: 16px;
+    max-width: calc(100% - 32px);
+  }
 }
 .player.is-awake .chrome {
   opacity: 1;

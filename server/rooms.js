@@ -115,20 +115,31 @@ function phaseStatus(room) {
   return 'swiping';
 }
 
+function displayName(room, id, name) {
+  const base = String(name || 'Guest').trim() || 'Guest';
+  const taken = (n) => room.members.some((m) => !m.left && m.id !== id && m.name === n);
+  if (!taken(base)) return base;
+  if (base === 'You' && !taken('Guest')) return 'Guest';
+  let i = 2;
+  while (taken(`${base} ${i}`)) i += 1;
+  return `${base} ${i}`;
+}
+
 function joinRoom(code, { id, name, color }) {
   const room = getRoom(code);
   if (!room) return { error: 'Party not found' };
   clearTimeout(room.cleanupTimer);
   const existing = room.members.find((m) => m.id === id);
+  const resolved = displayName(room, id, name);
   if (existing) {
     existing.left = false;
-    existing.name = name || existing.name;
+    existing.name = resolved;
     existing.color = color || existing.color;
     if (existing.status !== 'invited') existing.status = phaseStatus(room);
   } else {
     room.members.push({
       id,
-      name: name || 'Guest',
+      name: resolved,
       color: color || '#2458b5',
       status: phaseStatus(room),
       isBot: false,

@@ -136,6 +136,10 @@
   <section class="screen" id="watch" aria-label="Watch session" aria-hidden="true">
     <div class="player">
       <video playsinline preload="metadata"></video>
+      <div class="video-fallback" data-video-error hidden>
+        <p class="video-fallback-title">This clip didn’t load.</p>
+        <p>The party videos live in Git LFS. From the project folder run <code>git lfs pull</code>, then refresh.</p>
+      </div>
       <div class="subtitle-overlay" data-subs aria-live="polite"></div>
       <div class="presence">
         <button type="button" class="player-back" data-back title="Back to matching">

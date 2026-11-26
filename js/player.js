@@ -2,6 +2,7 @@ import { SAMPLE_VIDEO, SAMPLE_CHAT, formatTime, memberInitial, videoForTitle } f
 
 export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
   const video = root.querySelector('video');
+  const videoError = root.querySelector('[data-video-error]');
   const syncEl = root.querySelector('[data-sync]');
   const quietBtn = root.querySelector('[data-quiet]');
   const reactBar = root.querySelector('[data-react-bar]');
@@ -62,6 +63,8 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     video.src = SAMPLE_VIDEO;
     video.playsInline = true;
     video.volume = volumeLevel;
+    video.addEventListener('error', () => setVideoError(true));
+    video.addEventListener('loadeddata', () => setVideoError(false));
   }
 
   function wakeChrome(sticky = false) {
@@ -88,8 +91,13 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     return Date.now() < ignoreUntil;
   }
 
+  function setVideoError(on) {
+    if (videoError) videoError.hidden = !on;
+  }
+
   function loadTitleVideo(title, seekTo = 0, paused = true, rate = 1) {
     if (!video || !title) return;
+    setVideoError(false);
     const gen = ++loadGen;
     const src = videoForTitle(title);
     const abs = new URL(src, location.origin).href;
@@ -287,7 +295,12 @@ export function createPlayerUI({ root, client, titlesById, onEnd, onBack }) {
     if (seededChat) return;
     seededChat = true;
     if (chatLog.length) return;
-    SAMPLE_CHAT.forEach((msg) =>
+    const names = new Set(
+      (client.party?.members || [])
+        .filter((m) => m.status !== 'invited')
+        .map((m) => m.name)
+    );
+    SAMPLE_CHAT.filter((msg) => names.has(msg.name)).forEach((msg) =>
       appendChat({
         ...msg,
         id: `sample-${msg.memberId}`,

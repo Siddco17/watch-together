@@ -62,7 +62,15 @@ function setNavProfile(name, color, kind = 'user') {
   });
 }
 
+function applySelf(party) {
+  const me = party?.members?.find((m) => m.id === client.member.id);
+  if (!me?.name || me.name === client.member.name) return;
+  client.setProfileName(me.name, client.member.color);
+  setNavProfile(me.name, client.member.color, navKindFor({ name: me.name }));
+}
+
 function enterPhase(party) {
+  applySelf(party);
   const phase = party?.phase || 'match';
   renderJoinCode(party);
   if (phase === 'watch') {
@@ -328,6 +336,7 @@ client.on((event, payload) => {
   if (event === 'party:state' || event === 'swipe:update' || event === 'match:added') {
     const party = payload?.state || payload || client.party;
     if (!party) return;
+    applySelf(party);
     renderJoinCode(party);
     if (event === 'swipe:update' && payload?.memberId && payload.memberId !== client.member.id) {
       swipeUI.noteFriendSwipe(payload);
