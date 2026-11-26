@@ -132,10 +132,16 @@ export function createSwipeUI({ root, client, titlesById, onStartWatch }) {
     const startLabel = topTitle
       ? `Start with ${topTitle.title}`
       : 'Need 2 matches to start';
+    const othersSwiping = party.members.some(
+      (m) => m.id !== client.member.id && m.status !== 'invited'
+    );
+    const emptyCopy = othersSwiping
+      ? 'Swipe hearts together — two matches land here. Agree in under a minute.'
+      : 'You’re the only one swiping. Invite someone online (green), or share the code so a friend can match with you.';
 
     railEl.innerHTML = `
       <h4>Matched Tonight</h4>
-      <div class="rail-hits">${hits || '<p class="rail-empty">Swipe hearts together — two matches land here. Agree in under a minute.</p>'}</div>
+      <div class="rail-hits">${hits || `<p class="rail-empty">${esc(emptyCopy)}</p>`}</div>
       <button type="button" class="btn btn-red start-bar" data-start-top ${topTitle ? '' : 'disabled'}>${esc(startLabel)}</button>
     `;
 
